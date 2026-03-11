@@ -59,16 +59,16 @@ export default function Home() {
 
   return (
     <main style={{ minHeight: '100vh' }}>
-      <header style={{ position: 'sticky', top: 0, zIndex: 20, backdropFilter: 'blur(16px)', background: 'rgba(11,11,15,.65)', borderBottom: '1px solid var(--line)' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', padding: 16, display: 'flex', gap: 12, alignItems: 'center' }}>
-          <div style={{ fontWeight: 900, letterSpacing: .5, fontSize: 22 }}><span style={{ color: 'var(--accent)' }}>AI</span> OTT</div>
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="영화, 시리즈, 태그 검색" style={{ flex: 1, minWidth: 180 }} />
-          <Link href="/upload"><button>Upload</button></Link>
-          <Link href="/admin"><button>Admin</button></Link>
-        </div>
-      </header>
-
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: 20 }}>
+        {/* 검색 바 */}
+        <div style={{ marginBottom: 20 }}>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="영화, 시리즈, 태그 검색"
+            style={{ width: '100%', maxWidth: 480 }}
+          />
+        </div>
         <section style={{ position: 'relative', minHeight: 420, borderRadius: 24, overflow: 'hidden', border: '1px solid var(--line)', background: 'var(--panel)', boxShadow: 'var(--shadow)' }}>
           {hero?.bannerUrl || hero?.posterUrl ? (
             <img src={getThumbnailUrl(hero.bannerUrl || hero.posterUrl, BASE_URL) || ''} alt={hero.title} style={{ width: '100%', height: 420, objectFit: 'cover' }} />
