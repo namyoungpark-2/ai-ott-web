@@ -1,0 +1,51 @@
+name: Deploy to Development
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force deployment'
+        required: false
+        default: 'false'
+
+env:
+  NODE_ENV: development
+  ENVIRONMENT: development
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: development
+      url: ${{ steps.deploy.outputs.url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          NODE_ENV: development
+          NEXT_PUBLIC_API_BASE_URL: ${{ secrets.DEV_API_BASE_URL || 'http://localhost:8080' }}
+          NEXT_PUBLIC_APP_VERSION: ${{ github.sha }}
+
+      - name: Deploy to Vercel (Development)
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod=false'
+          scope: ${{ secrets.VERCEL_ORG_ID }}
