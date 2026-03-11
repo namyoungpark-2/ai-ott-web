@@ -1,10 +1,11 @@
+import { NextResponse } from "next/server";
 
 export async function GET(
-  { params }: { params: Promise<{ file: string }> | { file: string } }
+  _req: Request,
+  { params }: { params: Promise<{ file: string }> }
 ) {
   try {
-    const resolvedParams = await Promise.resolve(params);
-    const file = resolvedParams.file;
+    const { file } = await params;
 
     const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
     const url = `${base}/thumbnails/${file}`;

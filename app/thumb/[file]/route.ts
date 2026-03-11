@@ -1,8 +1,11 @@
+import { BASE_URL } from "@/app/constants";
+
 export async function GET(
   _req: Request,
-  { params }: { params: { file: string } }
+  { params }: { params: Promise<{ file: string }> }
 ) {
-  const res = await fetch(`http://localhost:8080/thumb/${params.file}`, {
+  const { file } = await params;
+  const res = await fetch(`${BASE_URL}/thumb/${file}`, {
     method: "GET",
     cache: "no-store",
   });

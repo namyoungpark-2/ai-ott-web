@@ -4,7 +4,7 @@ import { stagingConfig } from './staging';
 
 export type Environment = 'development' | 'staging' | 'production';
 
-export type AppConfig = typeof developmentConfig;
+export type AppConfig = Omit<typeof developmentConfig, 'env'> & { env: Environment };
 
 export function getEnvConfig(env?: string): AppConfig {
   const envName = (env || process.env.NODE_ENV || 'development') as Environment;
