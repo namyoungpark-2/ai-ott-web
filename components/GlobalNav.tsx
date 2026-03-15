@@ -53,6 +53,14 @@ export default function GlobalNav() {
 
             <div style={{ flex: 1 }} />
 
+            <Link
+              href="/search"
+              aria-label="검색"
+              style={{ fontSize: 13, padding: "7px 12px", color: "var(--muted)" }}
+            >
+              🔍
+            </Link>
+
             {/* loading 중에는 버튼 영역 비워서 레이아웃 shift 방지 */}
             {!loading && (
               <>

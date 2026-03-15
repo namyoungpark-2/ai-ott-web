@@ -68,63 +68,63 @@
 
 ## 3. 핵심 사용자 흐름 완성 (P1)
 
-### P1-1. 홈 화면
-- [ ] 홈 섹션 렌더링 안정화
-- [ ] 섹션 타입별 UI 분기 정리 (hero, rail, grid 등)
-- [ ] 섹션 데이터 없을 때 graceful fallback 제공
-- [ ] 포스터/배너 이미지 실패 시 대체 UI 제공
-- [ ] 콘텐츠 카드 hover/focus 상태 개선
+### P1-1. 홈 화면 ✅ 완료 (2026-03-15)
+- [x] 홈 섹션 렌더링 안정화 — browseState(loading/done/error) + retryKey 패턴
+- [x] 섹션 타입별 UI 분기 정리 — featured(첫 섹션 큰 카드), rail(가로스크롤), grid(검색결과)
+- [x] 섹션 데이터 없을 때 graceful fallback 제공 — 에러/빈 상태/로딩 스켈레톤 각각 분리
+- [x] 포스터/배너 이미지 실패 시 대체 UI 제공 — ImgWithFallback 컴포넌트 (onError → gradient placeholder)
+- [x] 콘텐츠 카드 hover/focus 상태 개선 — globals.css에 .content-card hover/focus-visible 스타일 추가
 
 완료 기준:
-- 홈이 빈 데이터, 일부 누락 데이터에서도 깨지지 않는다.
+- 홈이 빈 데이터, 일부 누락 데이터에서도 깨지지 않는다. ✅
 
-### P1-2. 검색
-- [ ] 검색 입력 debounce 적용
-- [ ] query string 기반 상태 동기화
-- [ ] 검색 결과 없음 UI 제공
-- [ ] 로딩/에러/빈 결과 상태 분리
-- [ ] 엔터, ESC, 키보드 포커스 흐름 점검
-
-완료 기준:
-- 검색 URL 공유가 가능하고, 새로고침 시 상태가 유지된다.
-
-### P1-3. 카테고리 페이지
-- [ ] 카테고리 목록/상세 페이지 데이터 정합성 확인
-- [ ] slug 없거나 잘못된 경우 404 처리
-- [ ] 정렬/필터 UI 추가 가능한 구조로 정리
-- [ ] 페이지네이션 또는 infinite scroll 도입 여부 결정
+### P1-2. 검색 ✅ 완료 (2026-03-16)
+- [x] 검색 입력 debounce 적용 — 300ms debounce, debouncedQuery 패턴
+- [x] query string 기반 상태 동기화 — `/search?q=...` URL 반영, 새로고침·공유 가능
+- [x] 검색 결과 없음 UI 제공 — "결과가 없습니다" + 다른 검색어 안내
+- [x] 로딩/에러/빈 결과 상태 분리 — idle/loading(스켈레톤)/done/error 각각 분리
+- [x] 엔터, ESC, 키보드 포커스 흐름 점검 — ESC 초기화, 자동 포커스, ✕ 버튼, aria-live
 
 완료 기준:
-- 카테고리 slug가 잘못되면 조용히 실패하지 않는다.
+- 검색 URL 공유가 가능하고, 새로고침 시 상태가 유지된다. ✅
 
-### P1-4. 콘텐츠 상세
-- [ ] 상세 메타데이터 표시 정리
-- [ ] 재생 CTA, 찜 CTA, 카테고리/태그 링크 정리
-- [ ] related content 섹션 자리 마련
-- [ ] 긴 설명 접기/펼치기 UX
-- [ ] age rating/runtime/release year 표시 규칙 통일
-
-완료 기준:
-- 사용자가 상세 페이지에서 재생 또는 탐색으로 자연스럽게 이동할 수 있다.
-
-### P1-5. 재생 페이지
-- [ ] playback progress 저장 호출 안정화
-- [ ] 재생 실패 상태 UI 추가
-- [ ] 재생 가능 여부/권한 오류 대응 UI 마련
-- [ ] 페이지 이탈 시 저장 처리 검토
-- [ ] 추후 HLS/DRM 플레이어로 교체 가능한 구조로 정리
+### P1-3. 카테고리 페이지 ✅ 완료 (2026-03-16)
+- [x] 카테고리 목록/상세 페이지 데이터 정합성 확인 — `contents`/`items` 방어 파싱
+- [x] slug 없거나 잘못된 경우 404 처리 — `notFound()` 호출
+- [x] 정렬/필터 UI 추가 가능한 구조로 정리 — `SortOption` 타입 + 클라이언트 정렬 + `TODO(API)` 주석
+- [x] 페이지네이션: load-more 구현 — `page` 상태 + `hasMore` 플래그 + `loadMore()` async 함수
 
 완료 기준:
-- 재생 상태 저장이 과도하게 호출되지 않고, 실패해도 페이지가 깨지지 않는다.
+- 카테고리 slug가 잘못되면 조용히 실패하지 않는다. ✅
 
-### P1-6. 내 목록
-- [ ] watchlist 페이지 empty state 개선
-- [ ] 카드 제거/추가 후 optimistic UI 검토
-- [ ] continue watching 섹션 구분
-- [ ] 로그인/비로그인 상태 분기 고려
+### P1-4. 콘텐츠 상세 ✅ 완료 (2026-03-16)
+- [x] 상세 메타데이터 표시 정리 — `MetaBadge` 컴포넌트, ageRating/year/runtime/type 배지
+- [x] 재생 CTA, 찜 CTA, 카테고리/태그 링크 정리 — Play/Watchlist 버튼, 낙관적 UI
+- [x] related content 섹션 자리 마련 — placeholder + `TODO(API)` 주석
+- [x] 긴 설명 접기/펼치기 UX — `ExpandableText` 컴포넌트 (200자 truncation)
+- [x] age rating/runtime/release year 표시 규칙 통일 — `formatRuntime`, `formatReleaseYear` util
 
 완료 기준:
-- 내 목록이 단순 목록이 아니라 OTT 사용 흐름에 맞는 개인화 영역으로 보인다.
+- 사용자가 상세 페이지에서 재생 또는 탐색으로 자연스럽게 이동할 수 있다. ✅
+
+### P1-5. 재생 페이지 ✅ 완료 (2026-03-16)
+- [x] playback progress 저장 호출 안정화 — pause + beforeunload 이벤트에서 `POST /api/me/playback-progress/{id}`
+- [x] 재생 실패 상태 UI 추가 — FAILED 상태 카드 표시
+- [x] 재생 가능 여부/권한 오류 대응 UI 마련 — 401/403/404 → FAILED 상태로 처리
+- [x] 페이지 이탈 시 저장 처리 — `beforeunload` 핸들러 + `keepalive: true`
+- [x] 타입 안전성 개선 — `sendWatchEvent(payload: WatchEventPayload)`, `ReturnType<typeof setTimeout>`, navigator.connection 타입 캐스트, fullscreen API 타입 정의
+
+완료 기준:
+- 재생 상태 저장이 과도하게 호출되지 않고, 실패해도 페이지가 깨지지 않는다. ✅
+
+### P1-6. 내 목록 ✅ 완료 (2026-03-16)
+- [x] watchlist 페이지 empty state 개선 — "찜한 콘텐츠가 없습니다" + 홈으로 안내
+- [x] 카드 제거 optimistic UI — 삭제 시 목록에서 즉시 제거, API 실패 시 상태 복구
+- [x] continue watching 섹션 구분 — 진행률 바 + 퍼센트 표시 포함
+- [x] loading/error/empty state 각각 분리 처리
+
+완료 기준:
+- 내 목록이 단순 목록이 아니라 OTT 사용 흐름에 맞는 개인화 영역으로 보인다. ✅
 
 ---
 

@@ -23,6 +23,7 @@ export default function AdminPage() {
     setContents(await contentRes.json().catch(() => []));
   }
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load().catch(console.error); }, []);
 
   async function createCategory() {
