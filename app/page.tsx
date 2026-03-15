@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getThumbnailUrl } from "./lib/url";
 import { BASE_URL } from "./constants";
+import { AdProvider, useAds } from "@/components/ads/AdProvider";
+import AdBanner from "@/components/ads/AdBanner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -222,7 +224,7 @@ function ContentSection({ section, displayType }: ContentSectionProps) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function Home() {
+function HomePage() {
   const [sections, setSections] = useState<CatalogSection[]>([]);
   const [browseState, setBrowseState] = useState<BrowseState>("loading");
   const [retryKey, setRetryKey] = useState(0);
@@ -518,18 +520,47 @@ export default function Home() {
         {(browseState === "done" || isSearching) && visibleSections.length > 0 && (
           <div style={{ display: "grid", gap: 36 }}>
             {visibleSections.map((section, index) => (
-              <ContentSection
-                key={section.key}
-                section={section}
-                displayType={
-                  isSearching ? "grid" : getSectionDisplayType(section.key, index)
-                }
-              />
+              <HomeSectionWithAd key={section.key} index={index}>
+                <ContentSection
+                  section={section}
+                  displayType={
+                    isSearching ? "grid" : getSectionDisplayType(section.key, index)
+                  }
+                />
+              </HomeSectionWithAd>
             ))}
           </div>
         )}
 
       </div>
     </main>
+  );
+}
+
+// Injects a banner ad after every 2nd section (index 1, 3, 5…)
+function HomeSectionWithAd({ index, children }: { index: number; children: React.ReactNode }) {
+  const { config } = useAds();
+  const banner = config?.banners[Math.floor(index / 2)] ?? null;
+  return (
+    <>
+      {children}
+      {banner && index % 2 === 1 && (
+        <AdBanner ad={banner} dismissible style={{ marginTop: -16 }} />
+      )}
+    </>
+  );
+}
+
+// Root export wraps with AdProvider
+function HomePageInner() {
+  return <HomePage />;
+}
+
+// Rename old default export to HomePage, new default wraps with AdProvider
+export default function HomePageWithAds() {
+  return (
+    <AdProvider pageType="home">
+      <HomePageInner />
+    </AdProvider>
   );
 }

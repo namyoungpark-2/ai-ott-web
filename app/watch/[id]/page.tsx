@@ -4,8 +4,11 @@ import { getThumbnailUrl } from "@/app/lib/url";
 import Hls from "hls.js";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BASE_URL } from "../../constants";
+import { AdProvider, useAds } from "@/components/ads/AdProvider";
+import VideoAd from "@/components/ads/VideoAd";
+import type { AdConfig, AdPhase, AdPlacement } from "@/types/ads";
 
 type Content = {
   id: string;
@@ -56,7 +59,7 @@ async function sendWatchEvent(payload: WatchEventPayload) {
   }
 }
 
-export default function WatchPage() {
+function WatchPageInner() {
   const params = useParams<{ id: string }>();
   const id = params?.id;
 
@@ -67,6 +70,50 @@ export default function WatchPage() {
   const [, setIsReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showUI, setShowUI] = useState(true);
+
+  // ── Ad state ───────────────────────────────────────────────────────────────
+  const { config: adConfig } = useAds();
+  const [activeAd, setActiveAd] = useState<AdPlacement | null>(null);
+  const [adPhase, setAdPhase] = useState<AdPhase>(null);
+  const [adConfigReady, setAdConfigReady] = useState(false);
+  const pendingMidRollsRef = useRef<AdPlacement[]>([]);
+  const preRollShownRef = useRef(false);
+
+  // Once ad config loads, set up mid-roll queue and flag pre-roll intent
+  useEffect(() => {
+    if (!adConfig) return;
+    const midRolls = [...(adConfig.video.midRolls ?? [])].sort(
+      (a, b) => (a.triggerPositionMs ?? 0) - (b.triggerPositionMs ?? 0)
+    );
+    pendingMidRollsRef.current = midRolls;
+    setTimeout(() => setAdConfigReady(true), 0);
+  }, [adConfig]);
+
+  // Show pre-roll when content becomes READY (only once)
+  useEffect(() => {
+    if (!adConfigReady || preRollShownRef.current) return;
+    if (!content || content.status !== "READY") return;
+    const preRoll = adConfig?.video.preRoll;
+    preRollShownRef.current = true;
+    if (preRoll) {
+      setTimeout(() => {
+        setActiveAd(preRoll);
+        setAdPhase("preroll");
+      }, 0);
+    }
+  }, [adConfigReady, content, adConfig]);
+
+  const handleAdComplete = useCallback(() => {
+    const phase = adPhase;
+    setActiveAd(null);
+    setAdPhase(null);
+    if (phase === "preroll" || phase === "midroll") {
+      // Resume / start main video
+      setTimeout(() => {
+        videoRef.current?.play().catch(() => {});
+      }, 0);
+    }
+  }, [adPhase]);
 
   // 1) 콘텐츠 폴링
   useEffect(() => {
@@ -315,14 +362,14 @@ export default function WatchPage() {
     v.addEventListener("pause", onPause);
     v.addEventListener("ended", onEnded);
   
-    // HEARTBEAT: 10초마다 watch time 적재
+    // HEARTBEAT: 10초마다 watch time 적재 + mid-roll 트리거 체크
     let lastPosMs = 0;
     const timer = setInterval(() => {
       if (v.paused || v.ended) return;
       const posMs = Math.floor(v.currentTime * 1000);
       const deltaMs = Math.max(0, posMs - lastPosMs);
       lastPosMs = posMs;
-  
+
       sendWatchEvent({
         ...basePayload,
         clientEventId: mkId(),
@@ -333,6 +380,18 @@ export default function WatchPage() {
         durationMs: isFinite(v.duration) ? Math.floor(v.duration * 1000) : null,
         playbackRate: v.playbackRate ?? 1.0,
       });
+
+      // Mid-roll trigger check
+      const midRolls = pendingMidRollsRef.current;
+      if (midRolls.length > 0) {
+        const next = midRolls[0];
+        if ((next.triggerPositionMs ?? Infinity) <= posMs) {
+          pendingMidRollsRef.current = midRolls.slice(1);
+          v.pause();
+          setActiveAd(next);
+          setAdPhase("midroll");
+        }
+      }
     }, 10_000);
   
     return () => {
@@ -629,7 +688,28 @@ export default function WatchPage() {
             Tip: 마우스를 움직이면 컨트롤이 나타나고 잠시 후 숨겨져.
           </div>
         </div>
+
+        {/* ── Video Ad Overlay ── */}
+        {activeAd && adPhase && (
+          <VideoAd
+            ad={activeAd}
+            phase={adPhase}
+            contentId={id ?? undefined}
+            onComplete={handleAdComplete}
+          />
+        )}
       </section>
     </main>
+  );
+}
+
+// Wrap WatchPageInner with AdProvider so it can access ad context
+export default function WatchPage() {
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
+  return (
+    <AdProvider pageType="watch" contentId={id ?? undefined}>
+      <WatchPageInner />
+    </AdProvider>
   );
 }
