@@ -2,15 +2,13 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { searchParams } = new URL(req.url);
     const lang = searchParams.get("lang") ?? "en";
 
-    // Next.js 15+에서는 params가 Promise일 수 있음
-    const resolvedParams = await Promise.resolve(params);
-    const id = resolvedParams.id;
+    const { id } = await params;
 
     const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
     console.log("[OTT] contents proxy", id);

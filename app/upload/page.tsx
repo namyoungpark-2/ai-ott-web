@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -40,9 +41,9 @@ export default function UploadPage() {
 
   return (
     <main style={{ padding: 24, maxWidth: 720, margin: "0 auto" }}>
-      <a href="/" style={{ display: "inline-block", marginBottom: 12 }}>
+      <Link href="/" style={{ display: "inline-block", marginBottom: 12 }}>
         ← 목록으로
-      </a>
+      </Link>
 
       <h1>업로드</h1>
 

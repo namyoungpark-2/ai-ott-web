@@ -2,6 +2,7 @@
 
 import { getThumbnailUrl } from "@/app/lib/url";
 import Hls from "hls.js";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { BASE_URL } from "../../constants";
@@ -15,6 +16,25 @@ type Content = {
   errorMessage?: string | null;
 };
 
+type WatchEventPayload = {
+  clientEventId: string;
+  occurredAt: string;
+  contentId: string;
+  videoAssetId: string | null;
+  sessionId: string;
+  deviceId: string;
+  country: string;
+  player: string;
+  appVersion: string;
+  networkType: string | null;
+  extra: Record<string, unknown>;
+  eventType: "PLAY" | "PAUSE" | "COMPLETE" | "HEARTBEAT";
+  positionMs: number;
+  deltaMs: number;
+  durationMs: number | null;
+  playbackRate: number;
+};
+
 function getOrCreate(key: string) {
   const v = localStorage.getItem(key);
   if (v) return v;
@@ -23,7 +43,7 @@ function getOrCreate(key: string) {
   return nv;
 }
 
-async function sendWatchEvent(payload: any) {
+async function sendWatchEvent(payload: WatchEventPayload) {
   try {
     await fetch("/api/watch-events", {
       method: "POST",
@@ -57,6 +77,31 @@ export default function WatchPage() {
       try {
         const res = await fetch(`/api/contents/${id}?lang=en`);
 
+        if (res.status === 403 || res.status === 401) {
+          // 권한 없음 — 폴링 중단, 사용자에게 알릴 수 있도록 FAILED 상태로 표시
+          if (!alive) return;
+          setContent({
+            id: id!,
+            title: "재생 권한 없음",
+            status: "FAILED",
+            streamUrl: null,
+            thumbnailUrl: null,
+            errorMessage: "이 콘텐츠를 재생할 권한이 없습니다.",
+          });
+          return;
+        }
+        if (res.status === 404) {
+          if (!alive) return;
+          setContent({
+            id: id!,
+            title: "콘텐츠를 찾을 수 없음",
+            status: "FAILED",
+            streamUrl: null,
+            thumbnailUrl: null,
+            errorMessage: "요청한 콘텐츠를 찾을 수 없습니다.",
+          });
+          return;
+        }
         if (!res.ok) {
           setTimeout(tick, 1500);
           return;
@@ -141,10 +186,10 @@ export default function WatchPage() {
   // 4) 마우스 움직이면 UI 보이기, 잠시 후 숨기기
   useEffect(() => {
     if (!isPlaying) {
-      setShowUI(true);
+      setTimeout(() => setShowUI(true), 0);
       return;
     }
-    let timer: any;
+    let timer: ReturnType<typeof setTimeout>;
 
     const bump = () => {
       setShowUI(true);
@@ -219,7 +264,7 @@ export default function WatchPage() {
       country: "KR",
       player: "ott-web",
       appVersion: "0.1.0",
-      networkType: (navigator as any)?.connection?.effectiveType ?? null,
+      networkType: (navigator as Navigator & { connection?: { effectiveType?: string } })?.connection?.effectiveType ?? null,
       extra: {},
     };
   
@@ -298,6 +343,40 @@ export default function WatchPage() {
     };
   }, [content]);
   
+  // 7) 재생 위치 저장 (pause / beforeunload)
+  useEffect(() => {
+    if (!content || content.status !== "READY") return;
+    const v = videoRef.current;
+    if (!v) return;
+
+    async function saveProgress() {
+      if (!v || !content) return;
+      const positionMs = Math.floor(v.currentTime * 1000);
+      if (positionMs <= 0) return;
+      try {
+        await fetch(`/api/me/playback-progress/${content.id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ positionMs }),
+          keepalive: true,
+        });
+      } catch {
+        // 네트워크 오류는 조용히 무시
+      }
+    }
+
+    const onPause = () => { saveProgress(); };
+    v.addEventListener("pause", onPause);
+
+    const onBeforeUnload = () => { saveProgress(); };
+    window.addEventListener("beforeunload", onBeforeUnload);
+
+    return () => {
+      v.removeEventListener("pause", onPause);
+      window.removeEventListener("beforeunload", onBeforeUnload);
+    };
+  }, [content]);
+
   async function onClickPlay() {
     const v = videoRef.current;
     if (!v) return;
@@ -312,11 +391,15 @@ export default function WatchPage() {
     const el = document.getElementById("player-root");
     if (!el) return;
 
-    const doc: any = document;
-    if (!doc.fullscreenElement) {
-      (el as any).requestFullscreen?.();
+    type FullscreenDoc = Document & { webkitFullscreenElement?: Element; mozFullScreenElement?: Element };
+    type FullscreenEl = Element & { requestFullscreen?: () => Promise<void>; webkitRequestFullscreen?: () => void };
+
+    const doc = document as FullscreenDoc;
+    const fsEl = el as FullscreenEl;
+    if (!doc.fullscreenElement && !doc.webkitFullscreenElement && !doc.mozFullScreenElement) {
+      (fsEl.requestFullscreen ?? fsEl.webkitRequestFullscreen)?.call(fsEl);
     } else {
-      doc.exitFullscreen?.();
+      document.exitFullscreen?.();
     }
   }
 
@@ -344,9 +427,9 @@ export default function WatchPage() {
             "linear-gradient(to bottom, rgba(0,0,0,.65), rgba(0,0,0,.12), transparent)",
         }}
       >
-        <a href="/" style={{ fontWeight: 800, color: "rgba(255,255,255,.92)" }}>
+        <Link href="/" style={{ fontWeight: 800, color: "rgba(255,255,255,.92)" }}>
           ← Back
-        </a>
+        </Link>
         <div style={{ flex: 1 }} />
         <button onClick={onToggleFullscreen}>Fullscreen</button>
       </div>

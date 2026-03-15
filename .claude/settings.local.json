@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"C:\\\\Users\\\\jarne\\\\Documents\\\\ai-ott-web\" && npm run lint 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\jarne\\\\Documents\\\\ai-ott-web\" && npx eslint components/GlobalNav.tsx 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\jarne\\\\Documents\\\\ai-ott-web\" && npx eslint app/categories/\\\\\\\\[slug\\\\\\\\]/page.tsx app/api/categories/\\\\\\\\[slug\\\\\\\\]/route.ts 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\jarne\\\\Documents\\\\ai-ott-web\" && npx eslint \"app/categories/[slug]/page.tsx\" \"app/api/categories/[slug]/route.ts\" 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\jarne\\\\Documents\\\\ai-ott-web\" && npx eslint components/AuthProvider.tsx components/LoginModal.tsx components/GlobalNav.tsx app/api/auth/login/route.ts app/api/auth/logout/route.ts 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\jarne\\\\Documents\\\\ai-ott-web\" && npm run build 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\jarne\\\\Documents\\\\ai-ott-web\" && gh pr create --title \"feat: 카테고리 네비게이션 바 + 로그인 인증 + 빌드 오류 수정\" --body \"$\\(cat <<'EOF'\n## Summary\n\n- **GlobalNav**: 모든 페이지 상단에 항상 표시되는 카테고리 네비게이션 바 \\(홈 / 영화 / 드라마 / 예능 / 애니메이션\\) + 현재 경로 하이라이트\n- **Auth**: AuthProvider\\(Context + localStorage\\), LoginModal 추가 — 비로그인 시 Upload/Admin 버튼 숨김, 로그인 버튼 표시\n- **Auth API**: `/api/auth/login`, `/api/auth/logout` 프록시 라우트 추가 \\(`MOCK_AUTH_ENABLED=true` 시 `admin/admin` 목 로그인 지원\\)\n- **Category page**: `/api/categories/[slug]` 프록시 + `/categories/[slug]` 페이지 추가 \\(로딩 스켈레톤 / 빈 상태 / 에러+재시도 처리\\)\n- **Build fix**: Next.js 16 `params: Promise<{...}>` 타입 오류 수정 \\(`thumb`, `thumbnails`, `contents` 라우트\\), `config/env AppConfig` 타입 리터럴 불일치 수정\n\n## Test plan\n\n- [ ] 홈\\(`/`\\) 진입 시 카테고리 네비게이션 바 상단 고정 확인\n- [ ] 카테고리 링크 클릭 시 해당 항목 하이라이트 확인\n- [ ] 비로그인 상태에서 Upload / Admin 버튼 미표시 확인\n- [ ] 로그인 버튼 클릭 → 모달 표시 → ESC / 배경 클릭으로 닫기 확인\n- [ ] `.env.local`에 `MOCK_AUTH_ENABLED=true` 설정 후 `admin` / `admin` 로그인 확인\n- [ ] 로그인 후 Upload / Admin 버튼 표시, 로그아웃 후 복귀 확인\n- [ ] `/categories/movie` 등 카테고리 페이지 진입 시 로딩 → 빈 상태 확인 \\(백엔드 미연결\\)\n- [ ] `npm run build` 오류 없이 통과 확인\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\nEOF\n\\)\" 2>&1)",
+      "Bash(where gh:*)"
+    ]
+  }
+}
