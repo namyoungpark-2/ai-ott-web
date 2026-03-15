@@ -13,7 +13,7 @@ export async function POST(req: Request) {
 
   // 백엔드 프록시 시도
   try {
-    const r = await fetch(`${BASE_URL}/api/auth/login`, {
+    const r = await fetch(`${BASE_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
