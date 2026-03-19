@@ -190,7 +190,7 @@ function ContentSection({ section, displayType }: ContentSectionProps) {
           marginBottom: 12,
         }}
       >
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, letterSpacing: -0.3 }}>
           {section.title}
         </h2>
         {section.items.length > 0 && (
@@ -336,7 +336,21 @@ function HomePage() {
       <div style={{ maxWidth: 1280, margin: "0 auto", padding: 20 }}>
 
         {/* 검색 바 — Enter 시 /search 페이지로 이동 */}
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 20, position: "relative", maxWidth: 480 }}>
+          <span
+            aria-hidden
+            style={{
+              position: "absolute",
+              left: 14,
+              top: "50%",
+              transform: "translateY(-50%)",
+              color: "var(--muted2)",
+              pointerEvents: "none",
+              fontSize: 15,
+            }}
+          >
+            🔍
+          </span>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -346,9 +360,9 @@ function HomePage() {
               }
               if (e.key === "Escape") setQuery("");
             }}
-            placeholder="영화, 시리즈, 태그 검색 (Enter로 전체 검색)"
+            placeholder="영화, 시리즈, 태그 검색…"
             aria-label="콘텐츠 검색"
-            style={{ width: "100%", maxWidth: 480 }}
+            style={{ width: "100%", paddingLeft: 40 }}
           />
         </div>
 
@@ -394,21 +408,14 @@ function HomePage() {
                 style={{ position: "absolute", left: 28, bottom: 28, maxWidth: 520 }}
               >
                 {hero.categories && hero.categories.length > 0 && (
-                  <div
-                    style={{
-                      color: "var(--accent)",
-                      fontSize: 11,
-                      fontWeight: 700,
-                      letterSpacing: 1.2,
-                      textTransform: "uppercase",
-                      marginBottom: 8,
-                    }}
-                  >
-                    {hero.categories.slice(0, 2).join(" · ")}
+                  <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+                    {hero.categories.slice(0, 2).map((cat) => (
+                      <span key={cat} className="tag tag-brand">{cat}</span>
+                    ))}
                   </div>
                 )}
                 <h1
-                  style={{ fontSize: 38, margin: "0 0 10px", lineHeight: 1.08 }}
+                  style={{ fontSize: 38, margin: "0 0 10px", lineHeight: 1.08, fontWeight: 900, letterSpacing: -0.5 }}
                 >
                   {hero.title}
                 </h1>
@@ -430,13 +437,8 @@ function HomePage() {
                 >
                   <Link href={`/watch/${hero.id}`}>
                     <button
-                      style={{
-                        background: "var(--accent)",
-                        border: "none",
-                        fontWeight: 700,
-                        padding: "10px 20px",
-                        color: "#fff",
-                      }}
+                      className="btn-grad"
+                      style={{ fontSize: 15, padding: "11px 26px", letterSpacing: 0 }}
                     >
                       ▶ 재생
                     </button>
@@ -548,7 +550,7 @@ function HomePage() {
         {/* Continue Watching rail */}
         {!isSearching && continueItems.length > 0 && (
           <section aria-label="이어보기" style={{ marginBottom: 36 }}>
-            <h2 style={{ margin: "0 0 12px", fontSize: 20, fontWeight: 700 }}>이어보기</h2>
+            <h2 style={{ margin: "0 0 12px", fontSize: 18, fontWeight: 800, letterSpacing: -0.3 }}>이어보기</h2>
             <div
               className="rail-scroll"
               style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 8 }}
