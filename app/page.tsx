@@ -7,6 +7,7 @@ import { getThumbnailUrl } from "./lib/url";
 import { BASE_URL } from "./constants";
 import { AdProvider, useAds } from "@/components/ads/AdProvider";
 import AdBanner from "@/components/ads/AdBanner";
+import { useAuth } from "@/components/AuthProvider";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -22,6 +23,15 @@ type CatalogItem = {
   releaseAt?: string | null;
   categories?: string[];
   tags?: string[];
+};
+
+type ContinueItem = {
+  contentId: string;
+  title: string;
+  thumbnailUrl?: string | null;
+  positionMs: number;
+  durationMs?: number | null;
+  progressPercent?: number | null;
 };
 
 // TODO(API): 백엔드가 type 필드를 추가하면 SectionDisplayType 분기를 여기서 교체
@@ -228,7 +238,9 @@ function HomePage() {
   const [sections, setSections] = useState<CatalogSection[]>([]);
   const [browseState, setBrowseState] = useState<BrowseState>("loading");
   const [retryKey, setRetryKey] = useState(0);
+  const [continueItems, setContinueItems] = useState<ContinueItem[]>([]);
 
+  const { user } = useAuth();
   const router = useRouter();
 
   const [query, setQuery] = useState("");
@@ -243,6 +255,23 @@ function HomePage() {
     setBrowseState("loading");
     setRetryKey((k) => k + 1);
   }
+
+  // Continue-watching fetch (logged-in users only)
+  useEffect(() => {
+    if (!user) {
+      setContinueItems([]);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/me/continue-watching", { credentials: "include", cache: "no-store" })
+      .then(async (res) => {
+        if (cancelled || !res.ok) return;
+        const data = (await res.json()) as ContinueItem[];
+        if (!cancelled) setContinueItems(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {/* silently ignore */});
+    return () => { cancelled = true; };
+  }, [user]);
 
   // Browse fetch
   useEffect(() => {
@@ -514,6 +543,75 @@ function HomePage() {
               &ldquo;{query.trim()}&rdquo;에 대한 결과가 없습니다.
             </p>
           </div>
+        )}
+
+        {/* Continue Watching rail */}
+        {!isSearching && continueItems.length > 0 && (
+          <section aria-label="이어보기" style={{ marginBottom: 36 }}>
+            <h2 style={{ margin: "0 0 12px", fontSize: 20, fontWeight: 700 }}>이어보기</h2>
+            <div
+              className="rail-scroll"
+              style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 8 }}
+            >
+              {continueItems.map((item) => {
+                const thumbSrc = item.thumbnailUrl
+                  ? getThumbnailUrl(item.thumbnailUrl, BASE_URL) ?? ""
+                  : "";
+                return (
+                  <Link
+                    key={item.contentId}
+                    href={`/watch/${item.contentId}${item.positionMs > 0 ? `?t=${Math.floor(item.positionMs / 1000)}` : ""}`}
+                    className="content-card"
+                    style={{ flexShrink: 0, width: 200, textDecoration: "none" }}
+                  >
+                    <div style={{ aspectRatio: "16 / 9", background: "#111", position: "relative" }}>
+                      {thumbSrc ? (
+                        <img
+                          src={thumbSrc}
+                          alt={item.title}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            background: "linear-gradient(135deg, rgba(109,94,252,.18), rgba(0,0,0,.35))",
+                          }}
+                        />
+                      )}
+                      {/* Progress bar */}
+                      {item.progressPercent != null && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            height: 3,
+                            background: "rgba(255,255,255,.2)",
+                          }}
+                        >
+                          <div
+                            style={{
+                              height: "100%",
+                              width: `${item.progressPercent}%`,
+                              background: "var(--accent)",
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ padding: "8px 10px" }}>
+                      <div style={{ fontWeight: 700, fontSize: 12, lineHeight: 1.35 }}>
+                        {item.title}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
         )}
 
         {/* Content sections */}

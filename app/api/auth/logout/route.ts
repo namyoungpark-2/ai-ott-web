@@ -3,16 +3,35 @@ import { NextResponse } from "next/server";
 import { BASE_URL } from "@/app/constants";
 
 export async function POST(req: Request) {
+  // 백엔드에 로그아웃 알림 (실패해도 쿠키는 제거)
   try {
-    const headers: HeadersInit = {};
-    const authHeader = req.headers.get("authorization");
     const cookie = req.headers.get("cookie");
-    if (authHeader) headers["authorization"] = authHeader;
-    if (cookie) headers["cookie"] = cookie;
-
-    await fetch(`${BASE_URL}/api/auth/logout`, { method: "POST", headers });
+    await fetch(`${BASE_URL}/auth/logout`, {
+      method: "POST",
+      headers: cookie ? { cookie } : {},
+    });
   } catch {
-    // 백엔드 연결 실패해도 클라이언트 세션은 정리하도록 200 반환
+    // 백엔드 연결 실패해도 쿠키 제거는 계속 진행
   }
-  return NextResponse.json({ ok: true });
+
+  const isProduction = process.env.NODE_ENV === "production";
+  const res = NextResponse.json({ ok: true });
+
+  // auth_token과 auth_user 쿠키 모두 제거
+  res.cookies.set("auth_token", "", {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
+  res.cookies.set("auth_user", "", {
+    httpOnly: false,
+    secure: isProduction,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
+
+  return res;
 }

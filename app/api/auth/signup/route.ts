@@ -18,15 +18,62 @@ export async function POST(req: Request) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    const text = await r.text();
+
     if (r.status === 409) {
       return NextResponse.json({ message: "이미 사용 중인 아이디입니다." }, { status: 409 });
     }
-    return new NextResponse(text, { status: r.status });
+
+    if (!r.ok) {
+      const text = await r.text().catch(() => "");
+      return new NextResponse(text, { status: r.status });
+    }
+
+    const data = (await r.json()) as {
+      accessToken?: string;
+      id?: string;
+      username?: string;
+      role?: string;
+      subscriptionTier?: string;
+    };
+
+    const token = data.accessToken;
+    if (!token) {
+      return NextResponse.json({ message: "회원가입에 실패했습니다." }, { status: 500 });
+    }
+
+    const userInfo = JSON.stringify({
+      id: data.id,
+      username: data.username,
+      role: data.role,
+      subscriptionTier: data.subscriptionTier ?? "FREE",
+    });
+
+    const isProduction = process.env.NODE_ENV === "production";
+    const res = NextResponse.json({
+      id: data.id,
+      username: data.username,
+      role: data.role,
+      subscriptionTier: data.subscriptionTier ?? "FREE",
+    });
+
+    res.cookies.set("auth_token", token, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24,
+    });
+
+    res.cookies.set("auth_user", userInfo, {
+      httpOnly: false,
+      secure: isProduction,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24,
+    });
+
+    return res;
   } catch {
-    return NextResponse.json(
-      { message: "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요." },
-      { status: 503 }
-    );
+    return NextResponse.json({ message: "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요." }, { status: 503 });
   }
 }

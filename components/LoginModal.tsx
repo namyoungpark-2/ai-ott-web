@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthProvider";
 
@@ -12,6 +13,7 @@ export default function LoginModal({ onClose }: Props) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const usernameRef = useRef<HTMLInputElement>(null);
@@ -36,6 +38,7 @@ export default function LoginModal({ onClose }: Props) {
     setUsername("");
     setPassword("");
     setConfirmPassword("");
+    setAgreedToTerms(false);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -51,6 +54,10 @@ export default function LoginModal({ onClose }: Props) {
       }
       if (password !== confirmPassword) {
         setError("비밀번호가 일치하지 않습니다.");
+        return;
+      }
+      if (!agreedToTerms) {
+        setError("이용약관 및 개인정보처리방침에 동의해주세요.");
         return;
       }
     }
@@ -231,6 +238,47 @@ export default function LoginModal({ onClose }: Props) {
                 style={{ width: "100%" }}
               />
             </div>
+          )}
+
+          {!isLogin && (
+            <label
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 8,
+                fontSize: 12,
+                color: "var(--muted)",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                disabled={submitting}
+                style={{ marginTop: 2, flexShrink: 0 }}
+              />
+              <span>
+                <Link
+                  href="/legal/terms"
+                  target="_blank"
+                  style={{ color: "var(--accent)", textDecoration: "underline" }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  이용약관
+                </Link>{" "}
+                및{" "}
+                <Link
+                  href="/legal/privacy"
+                  target="_blank"
+                  style={{ color: "var(--accent)", textDecoration: "underline" }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  개인정보처리방침
+                </Link>
+                에 동의합니다. (필수)
+              </span>
+            </label>
           )}
 
           {error && (
