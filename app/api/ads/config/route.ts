@@ -1,10 +1,10 @@
 export const runtime = "edge";
 import { NextResponse } from "next/server";
-import { BASE_URL } from "@/app/constants";
+import { BASE_URL, BACKEND_HEADERS } from "@/app/constants";
 import type { AdConfig } from "@/types/ads";
 
 function forwardHeaders(req: Request): HeadersInit {
-  const headers: HeadersInit = { "Content-Type": "application/json" };
+  const headers: HeadersInit = { "Content-Type": "application/json", ...BACKEND_HEADERS };
   const auth = req.headers.get("authorization");
   const cookie = req.headers.get("cookie");
   if (auth) headers["authorization"] = auth;
@@ -33,29 +33,8 @@ export async function GET(req: Request) {
     return NextResponse.json(mock);
   }
 
-  try {
-    const params = new URLSearchParams({ page });
-    if (contentId) params.set("contentId", contentId);
-
-    const r = await fetch(`${BASE_URL}/api/app/ads/config?${params.toString()}`, {
-      headers: forwardHeaders(req),
-      cache: "no-store",
-    });
-
-    if (r.status === 404 || r.status === 501) {
-      // Backend ads not yet implemented — return empty config gracefully
-      return NextResponse.json(emptyConfig(page, contentId));
-    }
-
-    if (!r.ok) {
-      return NextResponse.json(emptyConfig(page, contentId));
-    }
-
-    return new NextResponse(await r.text(), { status: r.status });
-  } catch {
-    // Ads failure must never break the page
-    return NextResponse.json(emptyConfig(page, contentId));
-  }
+  // Backend ads not yet implemented — return empty config gracefully immediately
+  return NextResponse.json(emptyConfig(page, contentId));
 }
 
 // ─── Mock Ad Config ───────────────────────────────────────────────────────────
