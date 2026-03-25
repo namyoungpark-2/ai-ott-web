@@ -31,6 +31,7 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_ENV: env,
     NEXT_PUBLIC_APP_VERSION: process.env.NEXT_PUBLIC_APP_VERSION || '0.1.0',
+    NEXT_PUBLIC_API_BASE_URL: apiBaseUrl,
   },
 };
 
