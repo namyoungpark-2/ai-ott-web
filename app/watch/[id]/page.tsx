@@ -1,77 +1,71 @@
 "use client";
 
-import { getThumbnailUrl } from "@/app/lib/url";
-import Hls from "hls.js";
-import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { BASE_URL } from "../../constants";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getThumbnailUrl } from "@/app/lib/url";
+import { BASE_URL } from "@/app/constants";
 import { AdProvider, useAds } from "@/components/ads/AdProvider";
 import VideoAd from "@/components/ads/VideoAd";
-import type { AdConfig, AdPhase, AdPlacement } from "@/types/ads";
+import type { AdPhase, AdPlacement } from "@/types/ads";
 
-type Content = {
-  id: string;
-  title: string;
-  status: "PROCESSING" | "READY" | "FAILED";
-  streamUrl?: string | null;
-  thumbnailUrl?: string | null;
-  errorMessage?: string | null;
-};
+// ── Hooks ────────────────────────────────────────────────────────────────────
+import { useContentPolling } from "@/hooks/useContentPolling";
+import { useHlsPlayer } from "@/hooks/useHlsPlayer";
+import { usePlaybackState } from "@/hooks/usePlaybackState";
+import { usePlayerUI } from "@/hooks/usePlayerUI";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useWatchEvents } from "@/hooks/useWatchEvents";
+import { usePlaybackProgress } from "@/hooks/usePlaybackProgress";
+import { useFullscreen } from "@/hooks/useFullscreen";
+import { useVideoOrientation } from "@/hooks/useVideoOrientation";
 
-type WatchEventPayload = {
-  clientEventId: string;
-  occurredAt: string;
-  contentId: string;
-  videoAssetId: string | null;
-  sessionId: string;
-  deviceId: string;
-  country: string;
-  player: string;
-  appVersion: string;
-  networkType: string | null;
-  extra: Record<string, unknown>;
-  eventType: "PLAY" | "PAUSE" | "COMPLETE" | "HEARTBEAT";
-  positionMs: number;
-  deltaMs: number;
-  durationMs: number | null;
-  playbackRate: number;
-};
+// ── Player components ────────────────────────────────────────────────────────
+import PlayerShell, { VideoContainer } from "@/components/player/PlayerShell";
+import BlurredBackground from "@/components/player/BlurredBackground";
+import PlayerTopBar from "@/components/player/PlayerTopBar";
+import PlayerOverlay from "@/components/player/PlayerOverlay";
+import PlayerBottomHint from "@/components/player/PlayerBottomHint";
 
-function getOrCreate(key: string) {
-  const v = localStorage.getItem(key);
-  if (v) return v;
-  const nv = crypto.randomUUID();
-  localStorage.setItem(key, nv);
-  return nv;
-}
-
-async function sendWatchEvent(payload: WatchEventPayload) {
-  try {
-    await fetch("/api/watch-events", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      keepalive: true,
-    });
-  } catch {
-    // POC: 실패 무시 (나중에 queue/retry)
-  }
-}
+// ─────────────────────────────────────────────────────────────────────────────
 
 function WatchPageInner() {
   const params = useParams<{ id: string }>();
   const id = params?.id;
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const hlsRef = useRef<Hls | null>(null);
 
-  const [content, setContent] = useState<Content | null>(null);
-  const [, setIsReady] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [showUI, setShowUI] = useState(true);
+  // ── Content polling ───────────────────────────────────────────────────────
+  const { content } = useContentPolling(id);
 
-  // ── Ad state ───────────────────────────────────────────────────────────────
+  // ── Video orientation detection ───────────────────────────────────────────
+  const { orientation, meta } = useVideoOrientation(videoRef, {
+    initialWidth: content?.videoWidth,
+    initialHeight: content?.videoHeight,
+  });
+
+  // ── HLS ───────────────────────────────────────────────────────────────────
+  useHlsPlayer(videoRef, content);
+
+  // ── Playback state ────────────────────────────────────────────────────────
+  const isPlaying = usePlaybackState(videoRef);
+
+  // ── UI visibility ─────────────────────────────────────────────────────────
+  const showUI = usePlayerUI(isPlaying);
+
+  // ── Fullscreen ────────────────────────────────────────────────────────────
+  const { isFullscreen, toggle: toggleFullscreen } = useFullscreen(
+    "player-root",
+    orientation,
+  );
+
+  // ── Keyboard shortcuts ────────────────────────────────────────────────────
+  const keyboardOptions = useMemo(
+    () => ({ onToggleFullscreen: toggleFullscreen }),
+    [toggleFullscreen],
+  );
+  useKeyboardShortcuts(videoRef, keyboardOptions);
+
+  // ── Ad state ──────────────────────────────────────────────────────────────
   const { config: adConfig } = useAds();
   const [activeAd, setActiveAd] = useState<AdPlacement | null>(null);
   const [adPhase, setAdPhase] = useState<AdPhase>(null);
@@ -79,17 +73,15 @@ function WatchPageInner() {
   const pendingMidRollsRef = useRef<AdPlacement[]>([]);
   const preRollShownRef = useRef(false);
 
-  // Once ad config loads, set up mid-roll queue and flag pre-roll intent
   useEffect(() => {
     if (!adConfig) return;
     const midRolls = [...(adConfig.video.midRolls ?? [])].sort(
-      (a, b) => (a.triggerPositionMs ?? 0) - (b.triggerPositionMs ?? 0)
+      (a, b) => (a.triggerPositionMs ?? 0) - (b.triggerPositionMs ?? 0),
     );
     pendingMidRollsRef.current = midRolls;
     setTimeout(() => setAdConfigReady(true), 0);
   }, [adConfig]);
 
-  // Show pre-roll when content becomes READY (only once)
   useEffect(() => {
     if (!adConfigReady || preRollShownRef.current) return;
     if (!content || content.status !== "READY") return;
@@ -108,334 +100,23 @@ function WatchPageInner() {
     setActiveAd(null);
     setAdPhase(null);
     if (phase === "preroll" || phase === "midroll") {
-      // Resume / start main video
       setTimeout(() => {
         videoRef.current?.play().catch(() => {});
       }, 0);
     }
   }, [adPhase]);
 
-  // 1) 콘텐츠 폴링
-  useEffect(() => {
-    if (!id) return;
-    let alive = true;
+  // ── Watch events + mid-roll ───────────────────────────────────────────────
+  const midRollTrigger = useMemo(
+    () => ({ setActiveAd, setAdPhase, pendingMidRollsRef }),
+    [],
+  );
+  useWatchEvents(videoRef, content, midRollTrigger);
 
-    async function tick() {
-      try {
-        const res = await fetch(`/api/contents/${id}?lang=en`);
+  // ── Playback progress save ────────────────────────────────────────────────
+  usePlaybackProgress(videoRef, content);
 
-        if (res.status === 403 || res.status === 401) {
-          // 권한 없음 — 폴링 중단, 사용자에게 알릴 수 있도록 FAILED 상태로 표시
-          if (!alive) return;
-          setContent({
-            id: id!,
-            title: "재생 권한 없음",
-            status: "FAILED",
-            streamUrl: null,
-            thumbnailUrl: null,
-            errorMessage: "이 콘텐츠를 재생할 권한이 없습니다.",
-          });
-          return;
-        }
-        if (res.status === 404) {
-          if (!alive) return;
-          setContent({
-            id: id!,
-            title: "콘텐츠를 찾을 수 없음",
-            status: "FAILED",
-            streamUrl: null,
-            thumbnailUrl: null,
-            errorMessage: "요청한 콘텐츠를 찾을 수 없습니다.",
-          });
-          return;
-        }
-        if (!res.ok) {
-          setTimeout(tick, 1500);
-          return;
-        }
-        const data = await res.json();
-
-        const normalized: Content = {
-          id: data.id,
-          title: data.title ?? "Untitled",
-          status: data.status,
-          streamUrl: data.streamUrl ?? null,
-          thumbnailUrl: data.thumbnailUrl ?? null,
-          errorMessage: data.errorMessage ?? null,
-        };
-
-        if (!alive) return;
-        setContent(normalized);
-
-        if (normalized.status === "READY") setIsReady(true);
-        if (normalized.status === "PROCESSING") setTimeout(tick, 1500);
-      } catch (error) {
-        console.error("Failed to fetch content:", error);
-        setTimeout(tick, 1500);
-      }
-    }
-
-    tick();
-    return () => {
-      alive = false;
-    };
-  }, [id]);
-
-  // 2) HLS attach (READY 되었을 때)
-  useEffect(() => {
-    if (!content || content.status !== "READY") return;
-    if (!videoRef.current || !content.streamUrl) return;
-    const src = content.streamUrl ? getThumbnailUrl(content.streamUrl, BASE_URL) : null;
-    if (!src) return;
-    const video = videoRef.current;
-
-    // iOS/Safari는 native HLS
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = src;
-      return;
-    }
-
-    if (Hls.isSupported()) {
-      // 기존 인스턴스 정리
-      if (hlsRef.current) {
-        hlsRef.current.destroy();
-        hlsRef.current = null;
-      }
-
-      const hls = new Hls();
-      hlsRef.current = hls;
-      hls.loadSource(src);
-      hls.attachMedia(video);
-
-      return () => {
-        hls.destroy();
-        hlsRef.current = null;
-      };
-    }
-  }, [content]);
-
-  // 3) 재생 상태 감지
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-
-    const onPlay = () => setIsPlaying(true);
-    const onPause = () => setIsPlaying(false);
-
-    v.addEventListener("play", onPlay);
-    v.addEventListener("pause", onPause);
-    return () => {
-      v.removeEventListener("play", onPlay);
-      v.removeEventListener("pause", onPause);
-    };
-  }, []);
-
-  // 4) 마우스 움직이면 UI 보이기, 잠시 후 숨기기
-  useEffect(() => {
-    if (!isPlaying) {
-      setTimeout(() => setShowUI(true), 0);
-      return;
-    }
-    let timer: ReturnType<typeof setTimeout>;
-
-    const bump = () => {
-      setShowUI(true);
-      clearTimeout(timer);
-      timer = setTimeout(() => setShowUI(false), 1800);
-    };
-
-    window.addEventListener("mousemove", bump);
-    window.addEventListener("touchstart", bump);
-
-    bump();
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener("mousemove", bump);
-      window.removeEventListener("touchstart", bump);
-    };
-  }, [isPlaying]);
-
-  // 5) 단축키 처리
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      const v = videoRef.current;
-      if (!v) return;
-  
-      // input에서 타이핑 중이면 단축키 무시
-      const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
-      if (tag === "input" || tag === "textarea") return;
-  
-      // Space: play/pause
-      if (e.code === "Space") {
-        e.preventDefault();
-          if (e.repeat) return;
-        if (v.paused) v.play().catch(() => {});
-        else v.pause();
-      }
-  
-      // ←/→: 5초 이동
-      if (e.code === "ArrowLeft") {
-        e.preventDefault();
-        v.currentTime = Math.max(0, v.currentTime - 5);
-      }
-      if (e.code === "ArrowRight") {
-        e.preventDefault();
-        v.currentTime = Math.min(v.duration || Number.MAX_SAFE_INTEGER, v.currentTime + 5);
-      }
-    };
-  
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
-  
-  // 6) 재생 이벤트 전송
-  useEffect(() => {
-    if (!content || content.status !== "READY") return;
-    const v = videoRef.current;
-    if (!v) return;
-  
-    const deviceId = getOrCreate("ott_device_id");
-    const sessionId = getOrCreate("ott_session_id"); // 탭/세션 단위로 새로 만들고 싶으면 다른 전략으로
-  
-    const contentId = content.id;
-    // 백엔드 DTO에는 videoAssetId가 optional이니, 지금 watch 응답에 없으면 null로 둠
-    const videoAssetId = null;
-  
-    const basePayload = {
-      clientEventId: "",
-      occurredAt: "",
-      contentId,
-      videoAssetId,
-      sessionId,
-      deviceId,
-      country: "KR",
-      player: "ott-web",
-      appVersion: "0.1.0",
-      networkType: (navigator as Navigator & { connection?: { effectiveType?: string } })?.connection?.effectiveType ?? null,
-      extra: {},
-    };
-  
-    const nowIso = () => new Date().toISOString();
-  
-    const mkId = () => crypto.randomUUID();
-  
-    const onPlay = () => {
-      sendWatchEvent({
-        ...basePayload,
-        clientEventId: mkId(),
-        occurredAt: nowIso(),
-        eventType: "PLAY",
-        positionMs: Math.floor(v.currentTime * 1000),
-        deltaMs: 0,
-        durationMs: isFinite(v.duration) ? Math.floor(v.duration * 1000) : null,
-        playbackRate: v.playbackRate ?? 1.0,
-      });
-    };
-  
-    const onPause = () => {
-      sendWatchEvent({
-        ...basePayload,
-        clientEventId: mkId(),
-        occurredAt: nowIso(),
-        eventType: "PAUSE",
-        positionMs: Math.floor(v.currentTime * 1000),
-        deltaMs: 0,
-        durationMs: isFinite(v.duration) ? Math.floor(v.duration * 1000) : null,
-        playbackRate: v.playbackRate ?? 1.0,
-      });
-    };
-  
-    const onEnded = () => {
-      sendWatchEvent({
-        ...basePayload,
-        clientEventId: mkId(),
-        occurredAt: nowIso(),
-        eventType: "COMPLETE",
-        positionMs: Math.floor(v.currentTime * 1000),
-        deltaMs: 0,
-        durationMs: isFinite(v.duration) ? Math.floor(v.duration * 1000) : null,
-        playbackRate: v.playbackRate ?? 1.0,
-      });
-    };
-  
-    v.addEventListener("play", onPlay);
-    v.addEventListener("pause", onPause);
-    v.addEventListener("ended", onEnded);
-  
-    // HEARTBEAT: 10초마다 watch time 적재 + mid-roll 트리거 체크
-    let lastPosMs = 0;
-    const timer = setInterval(() => {
-      if (v.paused || v.ended) return;
-      const posMs = Math.floor(v.currentTime * 1000);
-      const deltaMs = Math.max(0, posMs - lastPosMs);
-      lastPosMs = posMs;
-
-      sendWatchEvent({
-        ...basePayload,
-        clientEventId: mkId(),
-        occurredAt: nowIso(),
-        eventType: "HEARTBEAT",
-        positionMs: posMs,
-        deltaMs,
-        durationMs: isFinite(v.duration) ? Math.floor(v.duration * 1000) : null,
-        playbackRate: v.playbackRate ?? 1.0,
-      });
-
-      // Mid-roll trigger check
-      const midRolls = pendingMidRollsRef.current;
-      if (midRolls.length > 0) {
-        const next = midRolls[0];
-        if ((next.triggerPositionMs ?? Infinity) <= posMs) {
-          pendingMidRollsRef.current = midRolls.slice(1);
-          v.pause();
-          setActiveAd(next);
-          setAdPhase("midroll");
-        }
-      }
-    }, 10_000);
-  
-    return () => {
-      clearInterval(timer);
-      v.removeEventListener("play", onPlay);
-      v.removeEventListener("pause", onPause);
-      v.removeEventListener("ended", onEnded);
-    };
-  }, [content]);
-  
-  // 7) 재생 위치 저장 (pause / beforeunload)
-  useEffect(() => {
-    if (!content || content.status !== "READY") return;
-    const v = videoRef.current;
-    if (!v) return;
-
-    async function saveProgress() {
-      if (!v || !content) return;
-      const positionMs = Math.floor(v.currentTime * 1000);
-      if (positionMs <= 0) return;
-      try {
-        await fetch(`/api/me/playback-progress/${content.id}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ positionMs }),
-          keepalive: true,
-        });
-      } catch {
-        // 네트워크 오류는 조용히 무시
-      }
-    }
-
-    const onPause = () => { saveProgress(); };
-    v.addEventListener("pause", onPause);
-
-    const onBeforeUnload = () => { saveProgress(); };
-    window.addEventListener("beforeunload", onBeforeUnload);
-
-    return () => {
-      v.removeEventListener("pause", onPause);
-      window.removeEventListener("beforeunload", onBeforeUnload);
-    };
-  }, [content]);
-
+  // ── Actions ───────────────────────────────────────────────────────────────
   async function onClickPlay() {
     const v = videoRef.current;
     if (!v) return;
@@ -446,250 +127,63 @@ function WatchPageInner() {
     }
   }
 
-  function onToggleFullscreen() {
-    const el = document.getElementById("player-root");
-    if (!el) return;
+  const thumbUrl = content?.thumbnailUrl
+    ? getThumbnailUrl(content.thumbnailUrl, BASE_URL)
+    : null;
 
-    type FullscreenDoc = Document & { webkitFullscreenElement?: Element; mozFullScreenElement?: Element };
-    type FullscreenEl = Element & { requestFullscreen?: () => Promise<void>; webkitRequestFullscreen?: () => void };
+  const aspectRatio = meta?.aspectRatio ?? 0;
 
-    const doc = document as FullscreenDoc;
-    const fsEl = el as FullscreenEl;
-    if (!doc.fullscreenElement && !doc.webkitFullscreenElement && !doc.mozFullScreenElement) {
-      (fsEl.requestFullscreen ?? fsEl.webkitRequestFullscreen)?.call(fsEl);
-    } else {
-      document.exitFullscreen?.();
-    }
-  }
-
-  // const thumb = content?.thumbnailUrl ? content.thumbnailUrl : null;
-  const thumbUrl = content?.thumbnailUrl ? getThumbnailUrl(content.thumbnailUrl, BASE_URL) : null;
-
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <main style={{ minHeight: "100vh" }}>
-      {/* 상단 간단 내비 */}
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 20,
-          padding: "14px 18px",
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          pointerEvents: showUI ? "auto" : "none",
-          opacity: showUI ? 1 : 0,
-          transition: "opacity .18s ease",
-          background:
-            "linear-gradient(to bottom, rgba(0,0,0,.65), rgba(0,0,0,.12), transparent)",
-        }}
-      >
-        <Link href="/" style={{ fontWeight: 800, color: "rgba(255,255,255,.92)" }}>
-          ← Back
-        </Link>
-        <div style={{ flex: 1 }} />
-        <button onClick={onToggleFullscreen}>Fullscreen</button>
-      </div>
+      <PlayerTopBar
+        showUI={showUI}
+        onToggleFullscreen={toggleFullscreen}
+        isFullscreen={isFullscreen}
+      />
 
-      {/* 플레이어 루트 */}
-      <section
-        id="player-root"
-        onDoubleClick={onToggleFullscreen}
-        style={{
-          height: "100vh",
-          width: "100%",
-          display: "grid",
-          placeItems: "center",
-          background: "#000",
-          position: "relative",
-          overflow: "hidden",
-        }}
+      <PlayerShell
+        orientation={orientation}
+        isPlaying={isPlaying}
+        onDoubleClick={toggleFullscreen}
       >
-        {/* 배경(썸네일 블러) */}
-        {thumbUrl ? (
-          <img
-            src={thumbUrl}
-            alt=""
-            aria-hidden
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              filter: "blur(22px) saturate(1.15) brightness(.55)",
-              transform: "scale(1.06)",
-              opacity: isPlaying ? 0.25 : 0.45,
-              transition: "opacity .25s ease",
-            }}
-          />
-        ) : null}
-
-        {/* 실제 비디오 */}
-        <video
-          ref={videoRef}
-          controls
-          playsInline
-          style={{
-            width: "min(1200px, 92vw)",
-            maxHeight: "72vh",
-            borderRadius: 18,
-            background: "#000",
-            boxShadow: "0 18px 60px rgba(0,0,0,.55)",
-            position: "relative",
-            zIndex: 2,
-          }}
+        {/* Blurred thumbnail background */}
+        <BlurredBackground
+          src={thumbUrl}
+          isPlaying={isPlaying}
+          orientation={orientation}
         />
 
-        {/* 오버레이(타이틀/상태/플레이 버튼) */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            zIndex: 3,
-            display: "grid",
-            placeItems: "center",
-            pointerEvents: isPlaying ? "none" : "auto",
-          }}
-        >
-          {/* READY 전: 상태 카드 */}
-          {content?.status === "PROCESSING" ? (
-            <div
-              style={{
-                width: "min(520px, 92vw)",
-                padding: 18,
-                borderRadius: 16,
-                border: "1px solid rgba(255,255,255,.10)",
-                background: "rgba(0,0,0,.55)",
-                backdropFilter: "blur(10px)",
-              }}
-            >
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,.70)" }}>Encoding…</div>
-              <div style={{ fontSize: 20, fontWeight: 900, marginTop: 6 }}>
-                {content.title ?? "Untitled"}
-              </div>
-              <div style={{ marginTop: 10, color: "rgba(255,255,255,.75)", fontSize: 13 }}>
-                잠시만 기다려줘. HLS로 변환 중이야.
-              </div>
-              <div style={{ marginTop: 12, height: 8, borderRadius: 999, background: "rgba(255,255,255,.10)" }}>
-                <div
-                  style={{
-                    width: "45%",
-                    height: "100%",
-                    borderRadius: 999,
-                    background: "rgba(109,94,252,.55)",
-                    animation: "p 1.2s ease-in-out infinite alternate",
-                  }}
-                />
-              </div>
-              <style>{`@keyframes p { from { width: 25% } to { width: 70% } }`}</style>
-            </div>
-          ) : null}
+        {/* Orientation-adaptive video container */}
+        <VideoContainer orientation={orientation} aspectRatio={aspectRatio}>
+          <video
+            ref={videoRef}
+            controls
+            playsInline
+            style={{
+              width: "100%",
+              height: "100%",
+              borderRadius: 18,
+              background: "#000",
+              boxShadow: "0 18px 60px rgba(0,0,0,.55)",
+              objectFit: "contain",
+            }}
+          />
+        </VideoContainer>
 
-          {/* FAILED */}
-          {content?.status === "FAILED" ? (
-            <div
-              style={{
-                width: "min(520px, 92vw)",
-                padding: 18,
-                borderRadius: 16,
-                border: "1px solid rgba(255,255,255,.10)",
-                background: "rgba(0,0,0,.55)",
-                backdropFilter: "blur(10px)",
-              }}
-            >
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,.70)" }}>Failed</div>
-              <div style={{ fontSize: 20, fontWeight: 900, marginTop: 6 }}>
-                {content.title ?? "Untitled"}
-              </div>
-              <div style={{ marginTop: 10, color: "rgba(255,255,255,.75)", fontSize: 13 }}>
-                {content.errorMessage ?? "Unknown error"}
-              </div>
-            </div>
-          ) : null}
+        {/* Overlay: title / status / play button */}
+        <PlayerOverlay
+          content={content}
+          isPlaying={isPlaying}
+          orientation={orientation}
+          onClickPlay={onClickPlay}
+          onToggleFullscreen={toggleFullscreen}
+        />
 
-          {content?.status === "READY" && !isPlaying ? (
-            <div
-              onClick={onClickPlay}                      // ✅ 추가
-              role="button"                              // ✅ 추가(접근성)
-              aria-label="Play video"                    // ✅ 추가(접근성)
-              style={{
-                position: "absolute",
-                inset: 0,
-                display: "grid",
-                placeItems: "end start",
-                padding: 22,
-                cursor: "pointer",                       // ✅ 추가(클릭 가능 느낌)
-                background:
-                  "linear-gradient(to top, rgba(0,0,0,.72), rgba(0,0,0,.20), transparent)",
-              }}
-            >
-              <div style={{ width: "min(820px, 92vw)" }}>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,.72)" }}>Now Playing</div>
-                <div
-                  style={{
-                    fontSize: 34,
-                    fontWeight: 950,
-                    lineHeight: 1.05,
-                    letterSpacing: -0.2,
-                    marginTop: 6,
-                  }}
-                >
-                  {content.title ?? "Untitled"}
-                </div>
+        {/* Bottom hint */}
+        <PlayerBottomHint showUI={showUI} isPlaying={isPlaying} />
 
-                <div style={{ marginTop: 14, display: "flex", gap: 12, alignItems: "center" }}>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();   // ✅ 추가
-                      onClickPlay();
-                    }}
-                    style={{
-                      padding: "12px 14px",
-                      borderRadius: 12,
-                      background: "rgba(109,94,252,.22)",
-                      borderColor: "rgba(109,94,252,.50)",
-                      fontWeight: 800,
-                    }}
-                  >
-                    ▶ Play
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();   // ✅ 추가
-                      onToggleFullscreen();
-                    }}
-                  >Fullscreen</button>
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </div>
-
-        {/* 하단 UI 힌트 (재생 중이면 숨김) */}
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 10,
-            padding: "18px",
-            pointerEvents: "none",
-            opacity: showUI && isPlaying ? 1 : 0,
-            transition: "opacity .18s ease",
-            background:
-              "linear-gradient(to top, rgba(0,0,0,.65), rgba(0,0,0,.10), transparent)",
-          }}
-        >
-          <div style={{ maxWidth: 1200, margin: "0 auto", color: "rgba(255,255,255,.75)", fontSize: 12 }}>
-            Tip: 마우스를 움직이면 컨트롤이 나타나고 잠시 후 숨겨져.
-          </div>
-        </div>
-
-        {/* ── Video Ad Overlay ── */}
+        {/* Video Ad overlay */}
         {activeAd && adPhase && (
           <VideoAd
             ad={activeAd}
@@ -698,12 +192,11 @@ function WatchPageInner() {
             onComplete={handleAdComplete}
           />
         )}
-      </section>
+      </PlayerShell>
     </main>
   );
 }
 
-// Wrap WatchPageInner with AdProvider so it can access ad context
 export default function WatchPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id;
