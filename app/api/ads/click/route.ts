@@ -1,4 +1,3 @@
-export const runtime = "edge";
 import { NextResponse } from "next/server";
 import { BASE_URL, BACKEND_HEADERS } from "@/app/constants";
 import type { AdClickPayload } from "@/types/ads";

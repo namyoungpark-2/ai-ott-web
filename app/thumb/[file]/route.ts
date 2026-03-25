@@ -1,4 +1,3 @@
-export const runtime = "edge";
 import { BASE_URL, BACKEND_HEADERS } from "@/app/constants";
 
 export async function GET(
