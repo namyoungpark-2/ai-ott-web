@@ -1,12 +1,26 @@
-import Link from "next/link";
+"use client";
+
+import { useRouter } from "next/navigation";
 
 type Props = {
   showUI: boolean;
   onToggleFullscreen: () => void;
   isFullscreen: boolean;
+  title?: string;
 };
 
-export default function PlayerTopBar({ showUI, onToggleFullscreen, isFullscreen }: Props) {
+export default function PlayerTopBar({ showUI, onToggleFullscreen, isFullscreen, title }: Props) {
+  const router = useRouter();
+
+  function handleBack() {
+    // 히스토리가 있으면 뒤로, 없으면 홈으로
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/");
+    }
+  }
+
   return (
     <div
       style={{
@@ -18,20 +32,98 @@ export default function PlayerTopBar({ showUI, onToggleFullscreen, isFullscreen 
         padding: "14px 18px",
         display: "flex",
         alignItems: "center",
-        gap: 12,
+        gap: 14,
         pointerEvents: showUI ? "auto" : "none",
         opacity: showUI ? 1 : 0,
-        transition: "opacity .18s ease",
+        transition: "opacity .2s ease",
         background:
-          "linear-gradient(to bottom, rgba(0,0,0,.65), rgba(0,0,0,.12), transparent)",
+          "linear-gradient(to bottom, rgba(0,0,0,.75), rgba(0,0,0,.15), transparent)",
       }}
     >
-      <Link href="/" style={{ fontWeight: 800, color: "rgba(255,255,255,.92)" }}>
-        ← Back
-      </Link>
-      <div style={{ flex: 1 }} />
-      <button onClick={onToggleFullscreen} aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}>
-        {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+      {/* Back button */}
+      <button
+        onClick={handleBack}
+        aria-label="뒤로 가기"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 40,
+          height: 40,
+          borderRadius: "50%",
+          border: "none",
+          background: "rgba(255,255,255,.1)",
+          color: "#fff",
+          fontSize: 20,
+          cursor: "pointer",
+          transition: "background .15s",
+          flexShrink: 0,
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,.2)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,.1)"; }}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+      </button>
+
+      {/* Title (shown during playback) */}
+      {title && (
+        <span
+          style={{
+            fontSize: 14,
+            fontWeight: 600,
+            color: "rgba(255,255,255,.85)",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
+          {title}
+        </span>
+      )}
+
+      {!title && <div style={{ flex: 1 }} />}
+
+      {/* Fullscreen button */}
+      <button
+        onClick={onToggleFullscreen}
+        aria-label={isFullscreen ? "전체화면 해제" : "전체화면"}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 40,
+          height: 40,
+          borderRadius: "50%",
+          border: "none",
+          background: "rgba(255,255,255,.1)",
+          color: "#fff",
+          fontSize: 18,
+          cursor: "pointer",
+          transition: "background .15s",
+          flexShrink: 0,
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,.2)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,.1)"; }}
+      >
+        {isFullscreen ? (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M8 3v3a2 2 0 0 1-2 2H3" />
+            <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+            <path d="M3 16h3a2 2 0 0 1 2 2v3" />
+            <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
+          </svg>
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+            <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+            <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+            <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+          </svg>
+        )}
       </button>
     </div>
   );

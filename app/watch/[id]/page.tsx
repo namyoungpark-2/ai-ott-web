@@ -140,6 +140,7 @@ function WatchPageInner() {
         showUI={showUI}
         onToggleFullscreen={toggleFullscreen}
         isFullscreen={isFullscreen}
+        title={isPlaying ? content?.title : undefined}
       />
 
       <PlayerShell
