@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "./AuthProvider";
+import { useTheme } from "./ThemeProvider";
 import LoginModal from "./LoginModal";
 
 type Category = { label: string; slug: string };
@@ -35,9 +36,34 @@ function UserIcon() {
   );
 }
 
+function SunIcon() {
+  return (
+    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="5" />
+      <line x1="12" y1="1" x2="12" y2="3" />
+      <line x1="12" y1="21" x2="12" y2="23" />
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+      <line x1="1" y1="12" x2="3" y2="12" />
+      <line x1="21" y1="12" x2="23" y2="12" />
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
+  );
+}
+
 export default function GlobalNav() {
   const pathname = usePathname();
   const { user, loading, logout } = useAuth();
+  const { theme, toggle: toggleTheme } = useTheme();
   const [showLogin, setShowLogin] = useState(false);
 
   return (
@@ -49,7 +75,7 @@ export default function GlobalNav() {
           zIndex: 50,
           backdropFilter: "blur(24px) saturate(180%)",
           WebkitBackdropFilter: "blur(24px) saturate(180%)",
-          background: "rgba(7, 7, 15, 0.82)",
+          background: theme === "dark" ? "rgba(7, 7, 15, 0.82)" : "rgba(255, 255, 255, 0.85)",
           borderBottom: "1px solid var(--line)",
         }}
       >
@@ -115,6 +141,39 @@ export default function GlobalNav() {
             >
               <SearchIcon />
             </Link>
+
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              aria-label={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 38,
+                height: 38,
+                borderRadius: 10,
+                color: "var(--muted)",
+                background: "transparent",
+                border: "1px solid transparent",
+                cursor: "pointer",
+                transition: "all .15s",
+              }}
+              onMouseEnter={(e) => {
+                const el = e.currentTarget as HTMLElement;
+                el.style.color = "var(--text)";
+                el.style.background = theme === "dark" ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.05)";
+                el.style.borderColor = "var(--line2)";
+              }}
+              onMouseLeave={(e) => {
+                const el = e.currentTarget as HTMLElement;
+                el.style.color = "var(--muted)";
+                el.style.background = "transparent";
+                el.style.borderColor = "transparent";
+              }}
+            >
+              {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+            </button>
 
             {/* Auth controls */}
             {!loading && (

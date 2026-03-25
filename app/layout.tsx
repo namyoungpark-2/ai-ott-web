@@ -1,6 +1,7 @@
 import "./globals.css";
 import { Inter } from "next/font/google";
 import { AuthProvider } from "../components/AuthProvider";
+import { ThemeProvider } from "../components/ThemeProvider";
 import GlobalNav from "../components/GlobalNav";
 import CookieConsent from "../components/CookieConsent";
 
@@ -12,13 +13,15 @@ const inter = Inter({
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko" className={inter.variable}>
+    <html lang="ko" className={inter.variable} suppressHydrationWarning>
       <body>
-        <AuthProvider>
-          <GlobalNav />
-          {children}
-          <CookieConsent />
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <GlobalNav />
+            {children}
+            <CookieConsent />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
