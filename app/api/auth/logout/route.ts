@@ -1,6 +1,6 @@
 export const runtime = "edge";
 import { NextResponse } from "next/server";
-import { BASE_URL } from "@/app/constants";
+import { BASE_URL, BACKEND_HEADERS } from "@/app/constants";
 
 export async function POST(req: Request) {
   // 백엔드에 로그아웃 알림 (실패해도 쿠키는 제거)
@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     const cookie = req.headers.get("cookie");
     await fetch(`${BASE_URL}/auth/logout`, {
       method: "POST",
-      headers: cookie ? { cookie } : {},
+      headers: cookie ? { cookie, ...BACKEND_HEADERS } : { ...BACKEND_HEADERS },
     });
   } catch {
     // 백엔드 연결 실패해도 쿠키 제거는 계속 진행

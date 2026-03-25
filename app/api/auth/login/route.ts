@@ -1,6 +1,6 @@
 export const runtime = "edge";
 import { NextResponse } from "next/server";
-import { BASE_URL } from "@/app/constants";
+import { BASE_URL, BACKEND_HEADERS } from "@/app/constants";
 
 type LoginBody = { username?: string; password?: string };
 
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   try {
     const r = await fetch(`${BASE_URL}/auth/login`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...BACKEND_HEADERS },
       body: JSON.stringify(body),
     });
 

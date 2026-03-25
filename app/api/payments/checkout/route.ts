@@ -1,6 +1,6 @@
 export const runtime = "edge";
 import { NextResponse } from "next/server";
-import { BASE_URL } from "@/app/constants";
+import { BASE_URL, BACKEND_HEADERS } from "@/app/constants";
 
 export async function POST(req: Request) {
   try {
@@ -12,6 +12,7 @@ export async function POST(req: Request) {
       headers: {
         "Content-Type": "application/json",
         cookie,
+        ...BACKEND_HEADERS,
       },
       body: JSON.stringify({ plan: body.plan }),
       credentials: "include",

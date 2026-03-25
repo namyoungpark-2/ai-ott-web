@@ -1,11 +1,11 @@
 export const runtime = "edge";
 import { NextResponse } from "next/server";
-import { BASE_URL } from "@/app/constants";
+import { BASE_URL, BACKEND_HEADERS } from "@/app/constants";
 
 // GET /api/me/continue-watching
 export async function GET(req: Request) {
   try {
-    const headers: HeadersInit = { "Content-Type": "application/json" };
+    const headers: HeadersInit = { "Content-Type": "application/json", ...BACKEND_HEADERS };
     const auth = req.headers.get("authorization");
     const cookie = req.headers.get("cookie");
     if (auth) headers["authorization"] = auth;

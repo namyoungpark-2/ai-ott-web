@@ -2,7 +2,8 @@ export const runtime = "edge";
 export async function POST(req: Request) {
   const formData = await req.formData();
 
-  const res = await fetch("http://localhost:8080/api/upload", {
+  const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
+  const res = await fetch(`${base}/api/upload`, {
     method: "POST",
     body: formData,
   });

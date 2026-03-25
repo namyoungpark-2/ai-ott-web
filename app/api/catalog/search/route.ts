@@ -1,6 +1,6 @@
 export const runtime = "edge";
 import { NextResponse } from 'next/server';
-import { BASE_URL } from '@/app/constants';
+import { BASE_URL, BACKEND_HEADERS } from '@/app/constants';
 
 export async function GET(req: Request) {
   try {
@@ -14,7 +14,7 @@ export async function GET(req: Request) {
     const params = new URLSearchParams({ lang, q, limit, offset });
     if (category) params.set('category', category);
 
-    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    const headers: HeadersInit = { 'Content-Type': 'application/json', ...BACKEND_HEADERS };
     const authHeader = req.headers.get('authorization');
     const cookie = req.headers.get('cookie');
     if (authHeader) headers['authorization'] = authHeader;

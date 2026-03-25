@@ -1,5 +1,5 @@
 export const runtime = "edge";
-import { BASE_URL } from "@/app/constants";
+import { BASE_URL, BACKEND_HEADERS } from "@/app/constants";
 
 export async function GET(
   _req: Request,
@@ -8,6 +8,7 @@ export async function GET(
   const { file } = await params;
   const res = await fetch(`${BASE_URL}/thumb/${file}`, {
     method: "GET",
+    headers: { ...BACKEND_HEADERS },
     cache: "no-store",
   });
 

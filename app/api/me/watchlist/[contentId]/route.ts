@@ -1,6 +1,6 @@
 export const runtime = "edge";
 import { NextResponse } from "next/server";
-import { BASE_URL } from "@/app/constants";
+import { BASE_URL, BACKEND_HEADERS } from "@/app/constants";
 
 // DELETE /api/me/watchlist/[contentId]
 export async function DELETE(
@@ -9,7 +9,7 @@ export async function DELETE(
 ) {
   const { contentId } = await params;
   try {
-    const headers: HeadersInit = {};
+    const headers: HeadersInit = { ...BACKEND_HEADERS };
     const auth = req.headers.get("authorization");
     const cookie = req.headers.get("cookie");
     if (auth) headers["authorization"] = auth;
