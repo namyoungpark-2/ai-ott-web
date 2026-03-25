@@ -1,11 +1,11 @@
 /** @type {import('next').NextConfig} */
 // 환경 설정
 const env = process.env.NODE_ENV || 'development';
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 
-  (env === 'production' 
-    ? 'https://api.example.com' 
-    : env === 'staging' 
-    ? 'https://staging-api.example.com' 
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ||
+  (env === 'production'
+    ? 'https://9bdcca0e1c45.ngrok.app'
+    : env === 'staging'
+    ? 'https://9bdcca0e1c45.ngrok.app'
     : 'http://localhost:8080');
 
 const nextConfig = {
