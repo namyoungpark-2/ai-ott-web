@@ -12,8 +12,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "잘못된 요청입니다." }, { status: 400 });
   }
 
+  const backendUrl = `${BASE_URL}/auth/signup`;
+
   try {
-    const r = await fetch(`${BASE_URL}/auth/signup`, {
+    const r = await fetch(backendUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...BACKEND_HEADERS },
       body: JSON.stringify(body),
@@ -25,7 +27,7 @@ export async function POST(req: Request) {
 
     if (!r.ok) {
       const text = await r.text().catch(() => "");
-      return new NextResponse(text, { status: r.status });
+      return new NextResponse(text || `Backend ${r.status}`, { status: r.status });
     }
 
     const data = (await r.json()) as {
@@ -38,7 +40,7 @@ export async function POST(req: Request) {
 
     const token = data.accessToken;
     if (!token) {
-      return NextResponse.json({ message: "회원가입에 실패했습니다." }, { status: 500 });
+      return NextResponse.json({ message: "회원가입에 실패했습니다.", debug: { backendUrl, data } }, { status: 500 });
     }
 
     const userInfo = JSON.stringify({
@@ -73,7 +75,10 @@ export async function POST(req: Request) {
     });
 
     return res;
-  } catch {
-    return NextResponse.json({ message: "서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요." }, { status: 503 });
+  } catch (e) {
+    return NextResponse.json({
+      message: "서버에 연결할 수 없습니다.",
+      debug: { backendUrl, error: String(e) },
+    }, { status: 503 });
   }
 }
