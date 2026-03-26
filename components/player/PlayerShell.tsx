@@ -92,6 +92,7 @@ function getVideoContainerStyle(
     default:
       return {
         width: "min(1200px, 92vw)",
+        aspectRatio: "16 / 9",
         maxHeight: "80vh",
       };
   }
