@@ -66,6 +66,9 @@ export default function GlobalNav() {
   const { theme, toggle: toggleTheme } = useTheme();
   const [showLogin, setShowLogin] = useState(false);
 
+  // watch 페이지에서는 GlobalNav 숨김 (PlayerTopBar가 대체)
+  if (pathname?.startsWith("/watch")) return null;
+
   return (
     <>
       <header
