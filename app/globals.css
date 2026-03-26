@@ -294,6 +294,49 @@ input::placeholder { color: var(--muted2); }
 }
 .rail-scroll::-webkit-scrollbar-track { background: transparent; }
 
+/* ─── Category nav pill ─────────────────────────────────────────────────── */
+.cat-pill {
+  flex-shrink: 0;
+  padding: 5px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all .15s;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.cat-pill:hover {
+  color: var(--text);
+  background: rgba(139, 92, 246, .10);
+  border-color: rgba(139, 92, 246, .20);
+}
+.cat-pill.active {
+  font-weight: 600;
+  color: #fff;
+  background: rgba(139, 92, 246, .20);
+  border-color: rgba(139, 92, 246, .40);
+}
+.cat-pill.active:hover {
+  background: rgba(139, 92, 246, .28);
+}
+
+[data-theme="light"] .cat-pill:hover {
+  color: var(--text);
+  background: rgba(124, 58, 237, .08);
+  border-color: rgba(124, 58, 237, .18);
+}
+[data-theme="light"] .cat-pill.active {
+  color: #7c3aed;
+  background: rgba(124, 58, 237, .12);
+  border-color: rgba(124, 58, 237, .35);
+}
+[data-theme="light"] .cat-pill.active:hover {
+  background: rgba(124, 58, 237, .18);
+}
+
 /* ─── Divider ────────────────────────────────────────────────────────────── */
 .divider {
   height: 1px;

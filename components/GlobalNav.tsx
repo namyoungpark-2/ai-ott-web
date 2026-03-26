@@ -261,20 +261,7 @@ export default function GlobalNav() {
                 <Link
                   key={slug || "home"}
                   href={href}
-                  style={{
-                    flexShrink: 0,
-                    padding: "5px 16px",
-                    borderRadius: 999,
-                    fontSize: 13,
-                    fontWeight: isActive ? 600 : 400,
-                    color: isActive ? "#fff" : "var(--muted)",
-                    background: isActive
-                      ? "rgba(139, 92, 246, .20)"
-                      : "transparent",
-                    border: `1px solid ${isActive ? "rgba(139,92,246,.40)" : "transparent"}`,
-                    transition: "all .15s",
-                    whiteSpace: "nowrap",
-                  }}
+                  className={`cat-pill${isActive ? " active" : ""}`}
                 >
                   {label}
                 </Link>
