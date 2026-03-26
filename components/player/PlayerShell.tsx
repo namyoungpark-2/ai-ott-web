@@ -6,21 +6,18 @@ import type { VideoOrientation } from "@/types/video";
 type Props = {
   orientation: VideoOrientation;
   isPlaying: boolean;
+  isFullscreen: boolean;
   onDoubleClick?: () => void;
   children: ReactNode;
 };
 
 /**
- * The outermost player container that adapts its layout strategy
- * based on video orientation.
- *
- * Landscape: maximize width (16:9 cinematic feel)
- * Portrait:  maximize height (9:16, TikTok/Reels-like, blurred side panels)
- * Square:    balanced sizing
- * Unknown:   defaults to landscape behavior
+ * Player container:
+ * - Normal mode: inline player with aspect ratio, page scrollable below
+ * - Fullscreen: fills entire screen (100vh)
  */
 const PlayerShell = forwardRef<HTMLElement, Props>(function PlayerShell(
-  { orientation, isPlaying, onDoubleClick, children },
+  { orientation, isPlaying, isFullscreen, onDoubleClick, children },
   ref,
 ) {
   return (
@@ -30,13 +27,15 @@ const PlayerShell = forwardRef<HTMLElement, Props>(function PlayerShell(
       data-orientation={orientation}
       onDoubleClick={onDoubleClick}
       style={{
-        height: "100vh",
         width: "100%",
+        ...(isFullscreen
+          ? { height: "100vh", position: "fixed" as const, inset: 0, zIndex: 50 }
+          : { position: "relative" as const }
+        ),
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         background: "#000",
-        position: "relative",
         overflow: "hidden",
       }}
     >
@@ -52,14 +51,15 @@ export default PlayerShell;
 type VideoContainerProps = {
   orientation: VideoOrientation;
   aspectRatio: number;
+  isFullscreen: boolean;
   children: ReactNode;
 };
 
 /**
  * Wraps the <video> element with orientation-responsive sizing.
  */
-export function VideoContainer({ orientation, aspectRatio, children }: VideoContainerProps) {
-  const style = getVideoContainerStyle(orientation, aspectRatio);
+export function VideoContainer({ orientation, aspectRatio, isFullscreen, children }: VideoContainerProps) {
+  const style = getVideoContainerStyle(orientation, aspectRatio, isFullscreen);
 
   return (
     <div style={{ position: "relative", zIndex: 2, ...style, transition: "all .3s ease" }}>
@@ -71,29 +71,40 @@ export function VideoContainer({ orientation, aspectRatio, children }: VideoCont
 function getVideoContainerStyle(
   orientation: VideoOrientation,
   aspectRatio: number,
+  isFullscreen: boolean,
 ): React.CSSProperties {
+  // Fullscreen: fill the entire screen
+  if (isFullscreen) {
+    return {
+      width: "100%",
+      height: "100%",
+    };
+  }
+
+  // Normal (inline) mode
   switch (orientation) {
     case "portrait":
       return {
-        height: "min(88vh, calc(100vh - 60px))",
-        // Width derived from height * aspect ratio, but capped
-        maxWidth: "min(92vw, 500px)",
-        width: `calc(min(88vh, calc(100vh - 60px)) * ${aspectRatio || 0.5625})`,
+        width: "100%",
+        maxWidth: "min(92vw, 400px)",
+        aspectRatio: `${aspectRatio || 0.5625}`,
+        maxHeight: "70vh",
+        margin: "0 auto",
       };
 
     case "square":
       return {
-        width: "min(80vh, 80vw, 700px)",
-        height: "min(80vh, 80vw, 700px)",
+        width: "100%",
+        aspectRatio: "1 / 1",
+        maxHeight: "70vh",
       };
 
     case "landscape":
     case "unknown":
     default:
       return {
-        width: "min(1200px, 92vw)",
+        width: "100%",
         aspectRatio: "16 / 9",
-        maxHeight: "80vh",
       };
   }
 }
