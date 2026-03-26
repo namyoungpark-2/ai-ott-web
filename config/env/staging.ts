@@ -1,22 +1,22 @@
 export const stagingConfig = {
   env: 'staging' as const,
   api: {
-    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://9bdcca0e1c45.ngrok.app',
+    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://18aa8e56e5bc.ngrok.app',
     timeout: 30000,
   },
   next: {
     rewrites: [
       {
         source: '/api/uploads',
-        destination: `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://9bdcca0e1c45.ngrok.app'}/api/uploads`,
+        destination: `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://18aa8e56e5bc.ngrok.app'}/api/uploads`,
       },
       {
         source: '/stream/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://9bdcca0e1c45.ngrok.app'}/stream/:path*`,
+        destination: `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://18aa8e56e5bc.ngrok.app'}/stream/:path*`,
       },
       {
         source: '/thumbnails/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://9bdcca0e1c45.ngrok.app'}/thumbnails/:path*`,
+        destination: `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://18aa8e56e5bc.ngrok.app'}/thumbnails/:path*`,
       },
     ],
     proxyClientMaxBodySize: '1024mb',

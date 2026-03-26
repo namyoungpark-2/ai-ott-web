@@ -3,9 +3,9 @@
 const env = process.env.NODE_ENV || 'development';
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ||
   (env === 'production'
-    ? 'https://9bdcca0e1c45.ngrok.app'
+    ? 'https://18aa8e56e5bc.ngrok.app'
     : env === 'staging'
-    ? 'https://9bdcca0e1c45.ngrok.app'
+    ? 'https://18aa8e56e5bc.ngrok.app'
     : 'http://localhost:8080');
 
 const nextConfig = {
