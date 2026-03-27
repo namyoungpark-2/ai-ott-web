@@ -32,6 +32,7 @@ export function useCatalogNav() {
 
 export function CatalogNavProvider({ children }: { children: React.ReactNode }) {
   const [categories, setCategories] = useState<NavCategory[]>([]);
+  const [genres, setGenres] = useState<NavGenre[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,19 +44,11 @@ export function CatalogNavProvider({ children }: { children: React.ReactNode }) 
         const data = await res.json();
         if (cancelled) return;
 
-        // 백엔드 응답: { sections: [{ category, items }] }
-        // sections에서 고유 카테고리를 추출
-        if (Array.isArray(data?.sections)) {
-          const seen = new Set<string>();
-          const cats: NavCategory[] = [];
-          for (const section of data.sections) {
-            const cat = section.category;
-            if (typeof cat === "string" && cat && !seen.has(cat)) {
-              seen.add(cat);
-              cats.push({ slug: cat, label: cat.charAt(0).toUpperCase() + cat.slice(1) });
-            }
-          }
-          setCategories(cats);
+        if (Array.isArray(data?.categories)) {
+          setCategories(data.categories);
+        }
+        if (Array.isArray(data?.genres)) {
+          setGenres(data.genres);
         }
       })
       .catch(() => {})
@@ -67,7 +60,7 @@ export function CatalogNavProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   return (
-    <CatalogNavContext.Provider value={{ categories, genres: [], loading }}>
+    <CatalogNavContext.Provider value={{ categories, genres, loading }}>
       {children}
     </CatalogNavContext.Provider>
   );
