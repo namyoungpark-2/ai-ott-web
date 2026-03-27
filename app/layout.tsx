@@ -2,6 +2,7 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import { AuthProvider } from "../components/AuthProvider";
 import { ThemeProvider } from "../components/ThemeProvider";
+import { CatalogNavProvider } from "../components/CatalogProvider";
 import GlobalNav from "../components/GlobalNav";
 import CookieConsent from "../components/CookieConsent";
 
@@ -17,9 +18,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ThemeProvider>
           <AuthProvider>
-            <GlobalNav />
-            {children}
-            <CookieConsent />
+            <CatalogNavProvider>
+              <GlobalNav />
+              {children}
+              <CookieConsent />
+            </CatalogNavProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

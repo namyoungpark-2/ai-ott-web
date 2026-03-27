@@ -7,7 +7,11 @@ export async function GET(req: Request) {
     const lang = searchParams.get('lang') ?? 'en';
     const sectionLimit = searchParams.get('sectionLimit') ?? '12';
 
-    const headers: HeadersInit = { 'Content-Type': 'application/json', ...BACKEND_HEADERS };
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      'Accept-Language': lang,
+      ...BACKEND_HEADERS,
+    };
     const authHeader = req.headers.get('authorization');
     const cookie = req.headers.get('cookie');
     if (authHeader) headers['authorization'] = authHeader;

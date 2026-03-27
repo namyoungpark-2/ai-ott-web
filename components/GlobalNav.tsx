@@ -5,17 +5,8 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "./AuthProvider";
 import { useTheme } from "./ThemeProvider";
+import { useCatalogNav } from "./CatalogProvider";
 import LoginModal from "./LoginModal";
-
-type Category = { label: string; slug: string };
-
-const CATEGORIES: Category[] = [
-  { label: "홈", slug: "" },
-  { label: "영화", slug: "movie" },
-  { label: "드라마", slug: "drama" },
-  { label: "예능", slug: "variety" },
-  { label: "애니메이션", slug: "animation" },
-];
 
 /* ── SVG Icons ─────────────────────────────────────────────────────────── */
 function SearchIcon() {
@@ -64,7 +55,15 @@ export default function GlobalNav() {
   const pathname = usePathname();
   const { user, loading, logout } = useAuth();
   const { theme, toggle: toggleTheme } = useTheme();
+  const { categories, genres } = useCatalogNav();
   const [showLogin, setShowLogin] = useState(false);
+
+  // "홈"을 항상 첫 번째로 + 서버에서 받은 카테고리 + 장르
+  const navItems = [
+    { label: "홈", slug: "" },
+    ...categories.map((c) => ({ label: c.label, slug: c.slug })),
+    ...genres.map((g) => ({ label: g.label, slug: `genre/${g.slug}` })),
+  ];
 
   // watch 페이지에서는 GlobalNav 숨김 (PlayerTopBar가 대체)
   if (pathname?.startsWith("/watch")) return null;
@@ -250,7 +249,7 @@ export default function GlobalNav() {
             style={{ display: "flex", gap: 4, paddingBottom: 12, overflowX: "auto" }}
             className="rail-scroll"
           >
-            {CATEGORIES.map(({ label, slug }) => {
+            {navItems.map(({ label, slug }) => {
               const href = slug ? `/categories/${slug}` : "/";
               const isActive =
                 slug === ""

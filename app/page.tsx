@@ -22,7 +22,12 @@ type CatalogItem = {
   runtimeSeconds?: number | null;
   releaseAt?: string | null;
   categories?: string[];
+  genres?: string[];
   tags?: string[];
+  videoWidth?: number | null;
+  videoHeight?: number | null;
+  orientation?: string | null;
+  durationMs?: number | null;
 };
 
 type ContinueItem = {
