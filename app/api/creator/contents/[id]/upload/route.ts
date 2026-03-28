@@ -13,8 +13,13 @@ export async function POST(
     // Forward auth headers
     const headers: HeadersInit = {};
     const authHeader = req.headers.get("authorization");
-    if (authHeader) headers["authorization"] = authHeader;
-    const cookie = req.headers.get("cookie");
+    const cookie = req.headers.get("cookie") ?? "";
+    if (authHeader) {
+      headers["authorization"] = authHeader;
+    } else {
+      const match = cookie.match(/(?:^|;\s*)auth_token=([^;]+)/);
+      if (match?.[1]) headers["authorization"] = `Bearer ${match[1]}`;
+    }
     if (cookie) headers["cookie"] = cookie;
 
     // Forward the body as-is (multipart)

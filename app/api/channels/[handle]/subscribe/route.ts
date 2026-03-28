@@ -1,13 +1,23 @@
 import { NextResponse } from "next/server";
 
+function extractToken(req: Request): string | null {
+  // 1. Authorization 헤더에서 직접 가져오기
+  const authHeader = req.headers.get("authorization");
+  if (authHeader) return authHeader.replace(/^Bearer\s+/i, "");
+  // 2. httpOnly 쿠키에서 JWT 추출
+  const cookie = req.headers.get("cookie") ?? "";
+  const match = cookie.match(/(?:^|;\s*)auth_token=([^;]+)/);
+  return match?.[1] ?? null;
+}
+
 function forwardHeaders(req: Request): HeadersInit {
   const headers: HeadersInit = {
     "Content-Type": "application/json",
   };
 
-  const authHeader = req.headers.get("authorization");
-  if (authHeader) {
-    headers["authorization"] = authHeader;
+  const token = extractToken(req);
+  if (token) {
+    headers["authorization"] = `Bearer ${token}`;
   }
 
   const cookie = req.headers.get("cookie");

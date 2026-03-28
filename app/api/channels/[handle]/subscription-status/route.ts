@@ -11,9 +11,15 @@ export async function GET(
     console.log("[OTT] subscription-status proxy", handle);
 
     const headers: HeadersInit = { "Content-Type": "application/json" };
+    // auth_token 쿠키에서 JWT 추출하여 Authorization 헤더로 변환
     const authHeader = req.headers.get("authorization");
-    if (authHeader) headers["authorization"] = authHeader;
-    const cookie = req.headers.get("cookie");
+    const cookie = req.headers.get("cookie") ?? "";
+    if (authHeader) {
+      headers["authorization"] = authHeader;
+    } else {
+      const match = cookie.match(/(?:^|;\s*)auth_token=([^;]+)/);
+      if (match?.[1]) headers["authorization"] = `Bearer ${match[1]}`;
+    }
     if (cookie) headers["cookie"] = cookie;
 
     const r = await fetch(
