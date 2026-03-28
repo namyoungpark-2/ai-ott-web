@@ -42,7 +42,8 @@ export async function POST(
 
     const base =
       process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
-    console.log("[OTT] channels subscribe POST proxy", handle);
+    const token = extractToken(req);
+    console.log("[OTT] channels subscribe POST proxy", handle, "token:", token ? `${token.slice(0, 10)}...` : "NONE", "cookie:", req.headers.get("cookie")?.slice(0, 50) ?? "NONE");
 
     const headers = forwardHeaders(req);
 
