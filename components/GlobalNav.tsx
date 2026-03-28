@@ -248,6 +248,23 @@ export default function GlobalNav() {
                       {user.username}
                     </div>
 
+                    <Link
+                      href="/studio"
+                      style={{
+                        fontSize: 13,
+                        padding: "7px 14px",
+                        color: "var(--accent)",
+                        background: "rgba(139,92,246,.08)",
+                        border: "1px solid rgba(139,92,246,.2)",
+                        borderRadius: 10,
+                        textDecoration: "none",
+                        fontWeight: 600,
+                        transition: "all .15s",
+                      }}
+                    >
+                      {t("studio.title")}
+                    </Link>
+
                     <button
                       onClick={logout}
                       style={{
