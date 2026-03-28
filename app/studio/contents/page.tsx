@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
-import StudioSidebar from "@/components/studio/StudioSidebar";
-import type {
-  CreatorContent,
-  ContentStatus,
-  VideoAssetStatus,
-} from "@/types/channel";
+import { useRouter } from "next/navigation";
+import StudioLayout from "@/components/studio/StudioLayout";
+import StudioTable, { type Column } from "@/components/studio/StudioTable";
+import { StatusBadge, VideoStatusBadge } from "@/components/studio/StatusBadge";
+import ConfirmDialog from "@/components/studio/ConfirmDialog";
 import { useLocale } from "@/components/LocaleProvider";
+import type { CreatorContent, ContentStatus } from "@/types/channel";
 
 const STATUS_FILTERS: { label: string; value: ContentStatus | "ALL" }[] = [
   { label: "전체", value: "ALL" },
@@ -17,80 +17,40 @@ const STATUS_FILTERS: { label: string; value: ContentStatus | "ALL" }[] = [
   { label: "UNLISTED", value: "UNLISTED" },
 ];
 
-function statusBadgeStyle(status: ContentStatus): React.CSSProperties {
-  switch (status) {
-    case "PUBLISHED":
-      return {
-        background: "rgba(34,197,94,.2)",
-        color: "#22c55e",
-        padding: "2px 10px",
-        borderRadius: "var(--r-sm)",
-        fontSize: 12,
-        fontWeight: 600,
-      };
-    case "UNLISTED":
-      return {
-        background: "rgba(234,179,8,.2)",
-        color: "#eab308",
-        padding: "2px 10px",
-        borderRadius: "var(--r-sm)",
-        fontSize: 12,
-        fontWeight: 600,
-      };
-    case "ARCHIVED":
-      return {
-        background: "rgba(239,68,68,.2)",
-        color: "#ef4444",
-        padding: "2px 10px",
-        borderRadius: "var(--r-sm)",
-        fontSize: 12,
-        fontWeight: 600,
-      };
-    default:
-      return {
-        background: "rgba(150,150,150,.2)",
-        color: "var(--muted)",
-        padding: "2px 10px",
-        borderRadius: "var(--r-sm)",
-        fontSize: 12,
-        fontWeight: 600,
-      };
-  }
-}
-
-function videoStatusLabel(status: VideoAssetStatus): React.ReactNode {
-  if (status === null) {
-    return <span style={{ color: "var(--muted)", fontSize: 13 }}>업로드 필요</span>;
-  }
-  switch (status) {
-    case "UPLOADED":
-      return <span style={{ fontSize: 13 }}>&#x23F3; 대기중</span>;
-    case "TRANSCODING":
-      return <span style={{ fontSize: 13 }}>&#x1F504; 트랜스코딩</span>;
-    case "READY":
-      return <span style={{ fontSize: 13 }}>&#x2705; 준비됨</span>;
-    case "FAILED":
-      return <span style={{ fontSize: 13 }}>&#x274C; 실패</span>;
-    default:
-      return <span style={{ color: "var(--muted)", fontSize: 13 }}>-</span>;
-  }
-}
-
 export default function StudioContentsPage() {
+  return (
+    <StudioLayout>
+      <ContentsListContent />
+    </StudioLayout>
+  );
+}
+
+function ContentsListContent() {
   const { locale } = useLocale();
+  const router = useRouter();
   const [contents, setContents] = useState<CreatorContent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<ContentStatus | "ALL">("ALL");
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+
+  // Delete confirm dialog state
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+
+  // Bulk delete confirm dialog state
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const fetchContents = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/creator/contents?lang=${locale}&limit=50`, {
-        credentials: "include",
-        cache: "no-store",
-      });
+      const res = await fetch(
+        `/api/creator/contents?lang=${locale}&limit=50`,
+        { credentials: "include", cache: "no-store" },
+      );
       if (!res.ok) throw new Error("콘텐츠 목록을 불러올 수 없습니다.");
       const data = await res.json();
       setContents(Array.isArray(data) ? data : data.contents ?? []);
@@ -110,10 +70,10 @@ export default function StudioContentsPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`/api/creator/contents?lang=${locale}&limit=50`, {
-          credentials: "include",
-          cache: "no-store",
-        });
+        const res = await fetch(
+          `/api/creator/contents?lang=${locale}&limit=50`,
+          { credentials: "include", cache: "no-store" },
+        );
         if (!res.ok) throw new Error("콘텐츠 목록을 불러올 수 없습니다.");
         const data = await res.json();
         if (!cancelled) {
@@ -138,6 +98,16 @@ export default function StudioContentsPage() {
     };
   }, [locale]);
 
+  const filtered = useMemo(
+    () =>
+      filter === "ALL"
+        ? contents
+        : contents.filter((c) => c.status === filter),
+    [contents, filter],
+  );
+
+  // ─── Single item actions ──────────────────────────────────────────────────
+
   const handleStatusToggle = async (
     contentId: string,
     currentStatus: ContentStatus,
@@ -157,24 +127,79 @@ export default function StudioContentsPage() {
     }
   };
 
-  const handleDelete = async (contentId: string, title: string) => {
-    if (!window.confirm(`"${title}" 콘텐츠를 삭제하시겠습니까?`)) return;
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
     try {
-      const res = await fetch(`/api/creator/contents/${contentId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
+      const res = await fetch(
+        `/api/creator/contents/${deleteTarget.id}`,
+        { method: "DELETE", credentials: "include" },
+      );
       if (!res.ok) throw new Error("삭제에 실패했습니다.");
+      setDeleteTarget(null);
       await fetchContents();
     } catch (err) {
       alert(err instanceof Error ? err.message : "삭제에 실패했습니다.");
     }
   };
 
-  const filtered =
-    filter === "ALL"
-      ? contents
-      : contents.filter((c) => c.status === filter);
+  // ─── Bulk actions ─────────────────────────────────────────────────────────
+
+  const handleBulkPublish = async () => {
+    const ids = Array.from(selectedKeys);
+    try {
+      await Promise.all(
+        ids.map((id) =>
+          fetch(`/api/creator/contents/${id}/status?status=PUBLISHED`, {
+            method: "PATCH",
+            credentials: "include",
+          }),
+        ),
+      );
+      setSelectedKeys(new Set());
+      await fetchContents();
+    } catch {
+      alert("일괄 공개 처리 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleBulkUnlist = async () => {
+    const ids = Array.from(selectedKeys);
+    try {
+      await Promise.all(
+        ids.map((id) =>
+          fetch(`/api/creator/contents/${id}/status?status=UNLISTED`, {
+            method: "PATCH",
+            credentials: "include",
+          }),
+        ),
+      );
+      setSelectedKeys(new Set());
+      await fetchContents();
+    } catch {
+      alert("일괄 비공개 처리 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleBulkDeleteConfirm = async () => {
+    const ids = Array.from(selectedKeys);
+    try {
+      await Promise.all(
+        ids.map((id) =>
+          fetch(`/api/creator/contents/${id}`, {
+            method: "DELETE",
+            credentials: "include",
+          }),
+        ),
+      );
+      setBulkDeleteOpen(false);
+      setSelectedKeys(new Set());
+      await fetchContents();
+    } catch {
+      alert("일괄 삭제 처리 중 오류가 발생했습니다.");
+    }
+  };
+
+  // ─── Table columns ────────────────────────────────────────────────────────
 
   const actionBtnStyle: React.CSSProperties = {
     background: "transparent",
@@ -187,249 +212,313 @@ export default function StudioContentsPage() {
     transition: "border-color 0.15s",
   };
 
-  return (
-    <div
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        background: "var(--bg)",
-      }}
-    >
-      <StudioSidebar />
-
-      <div
-        style={{
-          flex: 1,
-          padding: "32px 40px",
-          maxWidth: 1280,
-          margin: "0 auto",
-        }}
-      >
-        {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 24,
-          }}
-        >
-          <h1
+  const columns: Column<CreatorContent>[] = [
+    {
+      key: "thumbnail",
+      label: "썸네일",
+      width: "56px",
+      render: (c) =>
+        c.thumbnailUrl ? (
+          <img
+            src={c.thumbnailUrl}
+            alt=""
             style={{
-              fontSize: 24,
-              fontWeight: 700,
-              color: "var(--text)",
-              margin: 0,
+              width: 40,
+              height: 24,
+              objectFit: "cover",
+              borderRadius: 4,
             }}
-          >
-            내 콘텐츠
-          </h1>
-          <Link
-            href="/studio/contents/new"
-            className="btn-grad"
-            style={{
-              padding: "8px 20px",
-              borderRadius: "var(--r-sm)",
-              fontSize: 14,
-              fontWeight: 600,
-              textDecoration: "none",
-              color: "#fff",
-            }}
-          >
-            새 콘텐츠
-          </Link>
-        </div>
-
-        {/* Status filter pills */}
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            marginBottom: 24,
-          }}
-        >
-          {STATUS_FILTERS.map((f) => {
-            const active = filter === f.value;
-            return (
-              <button
-                key={f.value}
-                onClick={() => setFilter(f.value)}
-                style={{
-                  padding: "6px 16px",
-                  borderRadius: 9999,
-                  fontSize: 13,
-                  fontWeight: active ? 600 : 400,
-                  border: "1px solid",
-                  borderColor: active ? "var(--accent)" : "var(--line)",
-                  background: active
-                    ? "color-mix(in srgb, var(--accent) 15%, transparent)"
-                    : "transparent",
-                  color: active ? "var(--accent)" : "var(--muted)",
-                  cursor: "pointer",
-                  transition: "all 0.15s",
-                }}
-              >
-                {f.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Loading / Error */}
-        {loading && (
-          <p style={{ color: "var(--muted)" }}>불러오는 중...</p>
-        )}
-        {error && <p style={{ color: "#f44" }}>{error}</p>}
-
-        {/* Content table */}
-        {!loading && !error && (
+          />
+        ) : (
           <div
             style={{
-              background: "var(--panel)",
-              border: "1px solid var(--line)",
-              borderRadius: "var(--r)",
-              overflow: "hidden",
+              width: 40,
+              height: 24,
+              borderRadius: 4,
+              background:
+                "linear-gradient(135deg, rgba(139,92,246,.3), rgba(59,130,246,.3))",
+            }}
+          />
+        ),
+    },
+    {
+      key: "title",
+      label: "제목",
+      render: (c) => (
+        <span
+          style={{
+            fontWeight: 600,
+            color: "var(--text)",
+            maxWidth: 240,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            display: "inline-block",
+          }}
+        >
+          {c.title}
+        </span>
+      ),
+    },
+    {
+      key: "contentType",
+      label: "타입",
+      width: "80px",
+      render: (c) => (
+        <span style={{ color: "var(--muted)", fontSize: 13 }}>
+          {c.contentType}
+        </span>
+      ),
+    },
+    {
+      key: "status",
+      label: "상태",
+      width: "100px",
+      render: (c) => <StatusBadge status={c.status} />,
+    },
+    {
+      key: "videoAssetStatus",
+      label: "비디오",
+      width: "120px",
+      render: (c) => <VideoStatusBadge status={c.videoAssetStatus} />,
+    },
+    {
+      key: "createdAt",
+      label: "날짜",
+      width: "100px",
+      render: (c) => (
+        <span
+          style={{ color: "var(--muted)", fontSize: 13, whiteSpace: "nowrap" }}
+        >
+          {new Date(c.createdAt).toLocaleDateString("ko-KR")}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      label: "액션",
+      width: "200px",
+      render: (c) => (
+        <div
+          style={{ display: "flex", gap: 6 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Link
+            href={`/studio/contents/${c.contentId}/edit`}
+            style={{
+              ...actionBtnStyle,
+              textDecoration: "none",
+              display: "inline-block",
             }}
           >
-            <table
+            편집
+          </Link>
+          {(c.status === "PUBLISHED" || c.status === "UNLISTED") && (
+            <button
+              onClick={() => handleStatusToggle(c.contentId, c.status)}
+              style={actionBtnStyle}
+            >
+              {c.status === "PUBLISHED" ? "비공개" : "공개"}
+            </button>
+          )}
+          <button
+            onClick={() =>
+              setDeleteTarget({ id: c.contentId, title: c.title })
+            }
+            style={{
+              ...actionBtnStyle,
+              color: "#ef4444",
+              borderColor: "rgba(239,68,68,.3)",
+            }}
+          >
+            삭제
+          </button>
+        </div>
+      ),
+    },
+  ];
+
+  // ─── Render ───────────────────────────────────────────────────────────────
+
+  return (
+    <>
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 24,
+        }}
+      >
+        <h1
+          style={{
+            fontSize: 24,
+            fontWeight: 700,
+            color: "var(--text)",
+            margin: 0,
+          }}
+        >
+          내 콘텐츠
+        </h1>
+        <Link
+          href="/studio/contents/new"
+          className="btn-grad"
+          style={{
+            padding: "8px 20px",
+            borderRadius: "var(--r-sm)",
+            fontSize: 14,
+            fontWeight: 600,
+            textDecoration: "none",
+            color: "#fff",
+          }}
+        >
+          새 콘텐츠
+        </Link>
+      </div>
+
+      {/* Status filter pills */}
+      <div style={{ display: "flex", gap: 4, marginBottom: 24 }}>
+        {STATUS_FILTERS.map((f) => (
+          <button
+            key={f.value}
+            onClick={() => {
+              setFilter(f.value);
+              setSelectedKeys(new Set());
+            }}
+            className={`cat-pill${filter === f.value ? " active" : ""}`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Bulk action bar */}
+      {selectedKeys.size > 0 && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            padding: "10px 16px",
+            marginBottom: 12,
+            background: "rgba(139,92,246,.08)",
+            border: "1px solid rgba(139,92,246,.25)",
+            borderRadius: "var(--r-sm)",
+          }}
+        >
+          <span
+            style={{ fontSize: 13, fontWeight: 600, color: "var(--accent)" }}
+          >
+            {selectedKeys.size}개 선택됨
+          </span>
+          <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
+            <button
+              onClick={handleBulkPublish}
               style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                fontSize: 14,
+                padding: "5px 14px",
+                fontSize: 12,
+                fontWeight: 600,
+                border: "1px solid rgba(34,197,94,.4)",
+                borderRadius: "var(--r-sm)",
+                background: "rgba(34,197,94,.1)",
+                color: "#22c55e",
+                cursor: "pointer",
               }}
             >
-              <thead>
-                <tr
-                  style={{
-                    borderBottom: "1px solid var(--line)",
-                    textAlign: "left",
-                  }}
-                >
-                  {["제목", "타입", "상태", "비디오", "날짜", "액션"].map(
-                    (h) => (
-                      <th
-                        key={h}
-                        style={{
-                          padding: "10px 14px",
-                          fontWeight: 600,
-                          color: "var(--muted)",
-                          fontSize: 12,
-                          textTransform: "uppercase",
-                          letterSpacing: 0.5,
-                        }}
-                      >
-                        {h}
-                      </th>
-                    ),
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      style={{
-                        padding: 32,
-                        textAlign: "center",
-                        color: "var(--muted)",
-                      }}
-                    >
-                      콘텐츠가 없습니다.
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map((c) => (
-                    <tr
-                      key={c.contentId}
-                      style={{ borderBottom: "1px solid var(--line2)" }}
-                    >
-                      <td
-                        style={{
-                          padding: "10px 14px",
-                          color: "var(--text)",
-                          fontWeight: 500,
-                          maxWidth: 280,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {c.title}
-                      </td>
-                      <td
-                        style={{
-                          padding: "10px 14px",
-                          color: "var(--muted)",
-                        }}
-                      >
-                        {c.contentType}
-                      </td>
-                      <td style={{ padding: "10px 14px" }}>
-                        <span style={statusBadgeStyle(c.status)}>
-                          {c.status}
-                        </span>
-                      </td>
-                      <td style={{ padding: "10px 14px" }}>
-                        {videoStatusLabel(c.videoAssetStatus)}
-                      </td>
-                      <td
-                        style={{
-                          padding: "10px 14px",
-                          color: "var(--muted)",
-                          fontSize: 13,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {new Date(c.createdAt).toLocaleDateString("ko-KR")}
-                      </td>
-                      <td style={{ padding: "10px 14px" }}>
-                        <div style={{ display: "flex", gap: 6 }}>
-                          <Link
-                            href={`/studio/contents/${c.contentId}/edit`}
-                            style={{
-                              ...actionBtnStyle,
-                              textDecoration: "none",
-                              display: "inline-block",
-                            }}
-                          >
-                            편집
-                          </Link>
-                          {(c.status === "PUBLISHED" ||
-                            c.status === "UNLISTED") && (
-                            <button
-                              onClick={() =>
-                                handleStatusToggle(c.contentId, c.status)
-                              }
-                              style={actionBtnStyle}
-                            >
-                              {c.status === "PUBLISHED"
-                                ? "비공개"
-                                : "공개"}
-                            </button>
-                          )}
-                          <button
-                            onClick={() =>
-                              handleDelete(c.contentId, c.title)
-                            }
-                            style={{
-                              ...actionBtnStyle,
-                              color: "#ef4444",
-                              borderColor: "rgba(239,68,68,.3)",
-                            }}
-                          >
-                            삭제
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+              일괄 공개
+            </button>
+            <button
+              onClick={handleBulkUnlist}
+              style={{
+                padding: "5px 14px",
+                fontSize: 12,
+                fontWeight: 600,
+                border: "1px solid rgba(234,179,8,.4)",
+                borderRadius: "var(--r-sm)",
+                background: "rgba(234,179,8,.1)",
+                color: "#eab308",
+                cursor: "pointer",
+              }}
+            >
+              일괄 비공개
+            </button>
+            <button
+              onClick={() => setBulkDeleteOpen(true)}
+              style={{
+                padding: "5px 14px",
+                fontSize: 12,
+                fontWeight: 600,
+                border: "1px solid rgba(239,68,68,.4)",
+                borderRadius: "var(--r-sm)",
+                background: "rgba(239,68,68,.1)",
+                color: "#ef4444",
+                cursor: "pointer",
+              }}
+            >
+              일괄 삭제
+            </button>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+
+      {/* Loading / Error */}
+      {loading && (
+        <p style={{ color: "var(--muted)" }}>불러오는 중...</p>
+      )}
+      {error && <p style={{ color: "#f44" }}>{error}</p>}
+
+      {/* Content table */}
+      {!loading && !error && (
+        <div
+          style={{
+            background: "var(--panel)",
+            border: "1px solid var(--line)",
+            borderRadius: "var(--r)",
+            overflow: "hidden",
+          }}
+        >
+          <StudioTable<CreatorContent>
+            columns={columns}
+            data={filtered}
+            rowKey={(c) => c.contentId}
+            selectable
+            selectedKeys={selectedKeys}
+            onSelectionChange={setSelectedKeys}
+            onRowClick={(c) =>
+              router.push(`/studio/contents/${c.contentId}/edit`)
+            }
+          />
+        </div>
+      )}
+
+      {/* Single delete confirm dialog */}
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="콘텐츠 삭제"
+        message={
+          deleteTarget
+            ? `"${deleteTarget.title}" 콘텐츠를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`
+            : ""
+        }
+        confirmLabel="삭제"
+        cancelLabel="취소"
+        variant="danger"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
+      {/* Bulk delete confirm dialog */}
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        title="일괄 삭제"
+        message={`선택한 ${selectedKeys.size}개의 콘텐츠를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`}
+        confirmLabel="삭제"
+        cancelLabel="취소"
+        variant="danger"
+        onConfirm={handleBulkDeleteConfirm}
+        onCancel={() => setBulkDeleteOpen(false)}
+      />
+    </>
   );
 }
