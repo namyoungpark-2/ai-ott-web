@@ -25,13 +25,15 @@ export async function GET(req: Request) {
     const text = await r.text();
     if (!r.ok) {
       console.error("[OTT] channels list proxy error:", r.status, text);
+      // 백엔드에 엔드포인트가 없는 경우 빈 배열 반환
+      if (r.status === 404 || r.status === 405) {
+        return NextResponse.json([], { status: 200 });
+      }
     }
     return new NextResponse(text, { status: r.status });
   } catch (e) {
     console.error("[OTT] channels list proxy error:", e);
-    return NextResponse.json(
-      { error: "channels list proxy failed" },
-      { status: 500 },
-    );
+    // 네트워크 에러 등 — 빈 배열 반환하여 UI가 "등록된 채널이 없습니다" 표시
+    return NextResponse.json([], { status: 200 });
   }
 }
