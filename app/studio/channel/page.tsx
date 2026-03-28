@@ -16,6 +16,14 @@ export default function ChannelSettingsPage() {
 
   // Form state
   const [name, setName] = useState("");
+  const [handle, setHandle] = useState("");
+  const [editingHandle, setEditingHandle] = useState(false);
+  const [newHandle, setNewHandle] = useState("");
+  const [handleSaving, setHandleSaving] = useState(false);
+  const [handleToast, setHandleToast] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
   const [description, setDescription] = useState("");
   const [profileImageUrl, setProfileImageUrl] = useState("");
   const [bannerImageUrl, setBannerImageUrl] = useState("");
@@ -34,6 +42,7 @@ export default function ChannelSettingsPage() {
         if (!cancelled) {
           setChannel(data);
           setName(data.name);
+          setHandle(data.handle);
           setDescription(data.description ?? "");
           setProfileImageUrl(data.profileImageUrl ?? "");
           setBannerImageUrl(data.bannerImageUrl ?? "");
@@ -56,6 +65,39 @@ export default function ChannelSettingsPage() {
       cancelled = true;
     };
   }, []);
+
+  const handleSaveHandle = async () => {
+    const trimmed = newHandle.trim();
+    if (!trimmed) return;
+    setHandleSaving(true);
+    setHandleToast(null);
+
+    try {
+      const res = await fetch("/api/creator/channel/handle", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newHandle: trimmed }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.message ?? body?.error ?? "핸들 변경에 실패했습니다.");
+      }
+
+      setHandle(trimmed);
+      setEditingHandle(false);
+      setNewHandle("");
+      setHandleToast({ type: "success", message: "핸들이 변경되었습니다." });
+    } catch (err) {
+      setHandleToast({
+        type: "error",
+        message: err instanceof Error ? err.message : "핸들 변경에 실패했습니다.",
+      });
+    } finally {
+      setHandleSaving(false);
+    }
+  };
 
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
@@ -165,6 +207,106 @@ export default function ChannelSettingsPage() {
                   placeholder="채널 이름"
                   style={inputStyle}
                 />
+              </div>
+
+              {/* Handle */}
+              <div>
+                <label style={labelStyle}>Handle</label>
+                {!editingHandle ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <span
+                      style={{
+                        fontSize: 14,
+                        color: "var(--text)",
+                        fontWeight: 500,
+                      }}
+                    >
+                      @{handle}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewHandle(handle);
+                        setEditingHandle(true);
+                        setHandleToast(null);
+                      }}
+                      style={{
+                        padding: "4px 12px",
+                        fontSize: 13,
+                        fontWeight: 500,
+                        background: "var(--bg2)",
+                        border: "1px solid var(--line2)",
+                        borderRadius: "var(--r-sm)",
+                        color: "var(--text)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      변경
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input
+                      type="text"
+                      value={newHandle}
+                      onChange={(e) => setNewHandle(e.target.value)}
+                      placeholder="new-handle"
+                      style={{ ...inputStyle, flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSaveHandle}
+                      disabled={handleSaving}
+                      className="btn-grad"
+                      style={{
+                        padding: "8px 16px",
+                        borderRadius: "var(--r-sm)",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "#fff",
+                        border: "none",
+                        cursor: handleSaving ? "not-allowed" : "pointer",
+                        opacity: handleSaving ? 0.6 : 1,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {handleSaving ? "저장 중..." : "저장"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingHandle(false);
+                        setNewHandle("");
+                        setHandleToast(null);
+                      }}
+                      style={{
+                        padding: "8px 16px",
+                        fontSize: 13,
+                        fontWeight: 500,
+                        background: "var(--bg2)",
+                        border: "1px solid var(--line2)",
+                        borderRadius: "var(--r-sm)",
+                        color: "var(--text)",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      취소
+                    </button>
+                  </div>
+                )}
+                {handleToast && (
+                  <p
+                    style={{
+                      margin: "6px 0 0",
+                      fontSize: 13,
+                      fontWeight: 500,
+                      color: handleToast.type === "success" ? "var(--accent)" : "#f44",
+                    }}
+                  >
+                    {handleToast.message}
+                  </p>
+                )}
               </div>
 
               {/* Description */}

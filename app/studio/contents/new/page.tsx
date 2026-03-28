@@ -115,7 +115,7 @@ export default function StudioNewContentPage() {
     try {
       const formData = new FormData();
       formData.append("file", uploadFile);
-      const res = await fetch(`/api/admin/contents/${contentId}/assets`, {
+      const res = await fetch(`/api/creator/contents/${contentId}/upload`, {
         method: "POST",
         credentials: "include",
         body: formData,

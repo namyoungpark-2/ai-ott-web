@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { useRouter } from "next/navigation";
 
@@ -20,6 +20,11 @@ export default function SubscribeButton({
   const [subscribed, setSubscribed] = useState(initialSubscribed);
   const [loading, setLoading] = useState(false);
   const [hover, setHover] = useState(false);
+
+  // Sync with parent when initialSubscribed changes (e.g. async fetch completes)
+  useEffect(() => {
+    setSubscribed(initialSubscribed);
+  }, [initialSubscribed]);
 
   const handleClick = async () => {
     if (!user) {

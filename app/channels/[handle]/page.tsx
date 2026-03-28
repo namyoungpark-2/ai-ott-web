@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import type { Channel, ChannelContent, ChannelSeries } from "@/types/channel";
 import SubscribeButton from "@/components/SubscribeButton";
+import { useAuth } from "@/components/AuthProvider";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -230,8 +231,10 @@ function formatSubscribers(count: number): string {
 export default function ChannelPage() {
   const params = useParams();
   const handle = typeof params.handle === "string" ? params.handle : "";
+  const { user } = useAuth();
 
   const [channel, setChannel] = useState<Channel | null>(null);
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const [channelState, setChannelState] = useState<FetchState>("loading");
 
   const [contents, setContents] = useState<ChannelContent[]>([]);
@@ -271,6 +274,26 @@ export default function ChannelPage() {
       cancelled = true;
     };
   }, [handle, retryKey]);
+
+  // ── Fetch subscription status ─────────────────────────────────────────
+
+  useEffect(() => {
+    if (!handle || !user) return;
+    let cancelled = false;
+    fetch(`/api/channels/${encodeURIComponent(handle)}/subscription-status`, {
+      credentials: "include",
+      cache: "no-store",
+    })
+      .then(async (res) => {
+        if (cancelled || !res.ok) return;
+        const data = await res.json();
+        setIsSubscribed(!!data.subscribed);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [handle, user]);
 
   // ── Fetch contents (initial) ───────────────────────────────────────────
 
@@ -554,6 +577,7 @@ export default function ChannelPage() {
           <div style={{ flexShrink: 0 }}>
             <SubscribeButton
               channelHandle={ch.handle}
+              initialSubscribed={isSubscribed}
               onSubscriptionChange={(subscribed) => {
                 setChannel((prev) =>
                   prev

@@ -28,6 +28,8 @@ type CatalogItem = {
   videoHeight?: number | null;
   orientation?: string | null;
   durationMs?: number | null;
+  channelHandle?: string | null;
+  channelName?: string | null;
 };
 
 type ContinueItem = {
@@ -111,6 +113,20 @@ function ContentCard({ item }: { item: CatalogItem }) {
         >
           {item.title}
         </div>
+        {item.channelName && (
+          <div
+            style={{
+              fontSize: 11,
+              color: "var(--muted)",
+              marginBottom: 2,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {item.channelName}
+          </div>
+        )}
         <div
           style={{ color: "var(--muted)", fontSize: 12, minHeight: 30, lineHeight: 1.5 }}
         >
