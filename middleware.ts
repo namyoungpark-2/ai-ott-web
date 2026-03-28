@@ -11,6 +11,7 @@ const PROTECTED_PATHS = [
   "/my-list",    // 내 목록
   "/profile",    // 프로필
   "/settings",   // 설정
+  "/studio",     // 스튜디오
 ];
 
 export function middleware(req: NextRequest) {
@@ -47,5 +48,6 @@ export const config = {
     "/my-list",
     "/profile",
     "/settings",
+    "/studio/:path*",
   ],
 };
