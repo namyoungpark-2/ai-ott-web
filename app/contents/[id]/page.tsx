@@ -24,6 +24,8 @@ type ContentDetail = {
   status: string;
   categories?: string[];
   tags?: string[];
+  channelHandle?: string | null;
+  channelName?: string | null;
 };
 
 type FetchState = "loading" | "done" | "error" | "not-found";
@@ -345,6 +347,55 @@ export default function ContentDetailPage() {
                 <MetaBadge>{content.contentType}</MetaBadge>
               )}
             </div>
+
+            {/* 채널 링크 */}
+            {content.channelHandle && (
+              <Link
+                href={`/channels/${content.channelHandle}`}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  marginBottom: 16,
+                  padding: "6px 12px",
+                  borderRadius: "var(--r-sm)",
+                  border: "1px solid var(--line)",
+                  background: "rgba(255,255,255,.04)",
+                  fontSize: 13,
+                  color: "var(--text)",
+                  transition: "border-color .15s, background .15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "var(--accent)";
+                  e.currentTarget.style.background = "rgba(139,92,246,.08)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "var(--line)";
+                  e.currentTarget.style.background = "rgba(255,255,255,.04)";
+                }}
+              >
+                <span
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: "50%",
+                    background: "var(--grad-brand)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: "#fff",
+                    flexShrink: 0,
+                  }}
+                >
+                  {(content.channelName ?? content.channelHandle).charAt(0).toUpperCase()}
+                </span>
+                <span style={{ fontWeight: 600 }}>
+                  {content.channelName ?? content.channelHandle}
+                </span>
+              </Link>
+            )}
 
             {/* CTA */}
             <div style={{ display: "flex", gap: 10, marginBottom: 24, flexWrap: "wrap" }}>
