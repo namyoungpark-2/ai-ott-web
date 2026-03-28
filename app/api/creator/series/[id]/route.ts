@@ -48,3 +48,48 @@ export async function PUT(
     );
   }
 }
+
+// DELETE /api/creator/series/[id]
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    console.log("[OTT] creator series DELETE proxy", id);
+
+    const headers: Record<string, string> = {};
+    const authHeader = req.headers.get("authorization");
+    const cookie = req.headers.get("cookie") ?? "";
+    if (authHeader) {
+      headers["authorization"] = authHeader;
+    } else {
+      const match = cookie.match(/(?:^|;\s*)auth_token=([^;]+)/);
+      if (match?.[1]) headers["authorization"] = `Bearer ${match[1]}`;
+    }
+    if (cookie) headers["cookie"] = cookie;
+    const userAgent = req.headers.get("user-agent");
+    if (userAgent) headers["user-agent"] = userAgent;
+
+    const r = await fetch(
+      `${base}/api/app/creator/series/${encodeURIComponent(id)}`,
+      {
+        method: "DELETE",
+        headers,
+      }
+    );
+
+    const text = await r.text();
+    if (!r.ok) {
+      console.error("[OTT] creator series DELETE error:", r.status, text);
+    }
+    return new NextResponse(text, { status: r.status });
+  } catch (e) {
+    console.error("[OTT] creator series DELETE error:", e);
+    return NextResponse.json(
+      { error: "creator series delete proxy failed" },
+      { status: 500 }
+    );
+  }
+}
