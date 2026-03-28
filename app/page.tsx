@@ -113,19 +113,31 @@ function ContentCard({ item }: { item: CatalogItem }) {
         >
           {item.title}
         </div>
-        {item.channelName && (
-          <div
+        {item.channelName && item.channelHandle && (
+          <a
+            href={`/channels/${item.channelHandle}`}
+            onClick={(e) => e.stopPropagation()}
             style={{
+              display: "block",
               fontSize: 11,
               color: "var(--muted)",
               marginBottom: 2,
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
+              textDecoration: "none",
+              position: "relative",
+              zIndex: 2,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "var(--accent)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "var(--muted)";
             }}
           >
             {item.channelName}
-          </div>
+          </a>
         )}
         <div
           style={{ color: "var(--muted)", fontSize: 12, minHeight: 30, lineHeight: 1.5 }}

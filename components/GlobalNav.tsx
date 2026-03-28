@@ -60,9 +60,10 @@ export default function GlobalNav() {
 
   // "홈"을 항상 첫 번째로 + 서버에서 받은 카테고리 + 장르
   const navItems = [
-    { label: "홈", slug: "" },
-    ...categories.map((c) => ({ label: c.label, slug: c.slug })),
-    ...genres.map((g) => ({ label: g.label, slug: `genre/${g.slug}` })),
+    { label: "홈", href: "/" },
+    { label: "채널", href: "/channels" },
+    ...categories.map((c) => ({ label: c.label, href: `/categories/${c.slug}` })),
+    ...genres.map((g) => ({ label: g.label, href: `/categories/genre/${g.slug}` })),
   ];
 
   // watch 페이지에서는 GlobalNav 숨김 (PlayerTopBar가 대체)
@@ -249,20 +250,19 @@ export default function GlobalNav() {
             style={{ display: "flex", gap: 4, paddingBottom: 12, overflowX: "auto" }}
             className="rail-scroll"
           >
-            {navItems.map(({ label, slug }) => {
-              const href = slug ? `/categories/${slug}` : "/";
+            {navItems.map((item) => {
               const isActive =
-                slug === ""
+                item.href === "/"
                   ? pathname === "/"
-                  : pathname === href || pathname.startsWith(`${href}/`);
+                  : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
               return (
                 <Link
-                  key={slug || "home"}
-                  href={href}
+                  key={item.href}
+                  href={item.href}
                   className={`cat-pill${isActive ? " active" : ""}`}
                 >
-                  {label}
+                  {item.label}
                 </Link>
               );
             })}
