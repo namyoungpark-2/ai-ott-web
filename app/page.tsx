@@ -48,6 +48,48 @@ type CatalogSection = { key: string; title: string; items: CatalogItem[] };
 type SectionDisplayType = "featured" | "rail" | "grid";
 type BrowseState = "loading" | "done" | "error";
 
+// ─── Section title i18n fallback ─────────────────────────────────────────────
+
+const SECTION_TITLE_MAP: Record<string, Record<string, string>> = {
+  ko: {
+    featured: "추천 콘텐츠",
+    latest: "최신 콘텐츠",
+    popular: "인기 콘텐츠",
+    trending: "트렌딩",
+    "new releases": "신규 공개",
+    "top rated": "높은 평점",
+    "continue watching": "이어보기",
+    recommended: "추천",
+    movie: "영화",
+    drama: "드라마",
+    variety: "예능",
+    animation: "애니메이션",
+    documentary: "다큐멘터리",
+  },
+  en: {
+    featured: "Featured",
+    latest: "Latest",
+    popular: "Popular",
+    trending: "Trending",
+    "new releases": "New Releases",
+    "top rated": "Top Rated",
+    "continue watching": "Continue Watching",
+    recommended: "Recommended",
+    movie: "Movies",
+    drama: "Drama",
+    variety: "Variety",
+    animation: "Animation",
+    documentary: "Documentary",
+  },
+};
+
+function localizeSectionTitle(title: string, locale: string): string {
+  const map = SECTION_TITLE_MAP[locale];
+  if (!map) return title;
+  const key = title.toLowerCase().trim();
+  return map[key] ?? title;
+}
+
 // ─── Utils ────────────────────────────────────────────────────────────────────
 
 function getSectionDisplayType(key: string, index: number): SectionDisplayType {
@@ -209,13 +251,15 @@ function SkeletonCard() {
 type ContentSectionProps = {
   section: CatalogSection;
   displayType: SectionDisplayType;
+  locale: string;
 };
 
-function ContentSection({ section, displayType }: ContentSectionProps) {
+function ContentSection({ section, displayType, locale }: ContentSectionProps) {
   const isRail = displayType === "rail";
+  const title = localizeSectionTitle(section.title, locale);
 
   return (
-    <section aria-label={section.title}>
+    <section aria-label={title}>
       <div
         style={{
           display: "flex",
@@ -225,7 +269,7 @@ function ContentSection({ section, displayType }: ContentSectionProps) {
         }}
       >
         <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, letterSpacing: -0.3 }}>
-          {section.title}
+          {title}
         </h2>
         {section.items.length > 0 && (
           <span style={{ color: "var(--muted)", fontSize: 12 }}>
@@ -661,6 +705,7 @@ function HomePage() {
                   displayType={
                     isSearching ? "grid" : getSectionDisplayType(section.key, index)
                   }
+                  locale={locale}
                 />
               </HomeSectionWithAd>
             ))}

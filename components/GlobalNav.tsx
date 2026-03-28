@@ -64,7 +64,6 @@ export default function GlobalNav() {
     { label: t("nav.home"), href: "/" },
     { label: t("nav.channels"), href: "/channels" },
     ...categories.map((c) => ({ label: c.label, href: `/categories/${c.slug}` })),
-    ...genres.map((g) => ({ label: g.label, href: `/categories/genre/${g.slug}` })),
   ];
 
   // watch 페이지에서는 GlobalNav 숨김 (PlayerTopBar가 대체)
