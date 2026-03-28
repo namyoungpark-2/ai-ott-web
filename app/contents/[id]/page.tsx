@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getThumbnailUrl } from "@/app/lib/url";
 import { BASE_URL } from "@/app/constants";
+import { useLocale } from "@/components/LocaleProvider";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -155,6 +156,7 @@ function SkeletonDetail() {
 export default function ContentDetailPage() {
   const params = useParams();
   const id = typeof params.id === "string" ? params.id : "";
+  const { locale } = useLocale();
 
   const [content, setContent] = useState<ContentDetail | null>(null);
   const [state, setState] = useState<FetchState>("loading");
@@ -171,7 +173,7 @@ export default function ContentDetailPage() {
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
-    fetch(`/api/contents/${id}?lang=en`, { cache: "no-store" })
+    fetch(`/api/contents/${id}?lang=${locale}`, { cache: "no-store" })
       .then(async (res) => {
         if (cancelled) return;
         if (res.status === 404) { setState("not-found"); return; }
@@ -184,7 +186,7 @@ export default function ContentDetailPage() {
         if (!cancelled) setState("error");
       });
     return () => { cancelled = true; };
-  }, [id, retryKey]);
+  }, [id, retryKey, locale]);
 
   // 찜 토글
   async function toggleWatchlist() {

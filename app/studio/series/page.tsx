@@ -7,8 +7,10 @@ import type {
   CreateSeriesPayload,
   UpdateSeriesPayload,
 } from "@/types/channel";
+import { useLocale } from "@/components/LocaleProvider";
 
 export default function StudioSeriesPage() {
+  const { locale } = useLocale();
   const [seriesList, setSeriesList] = useState<CreatorSeries[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +34,7 @@ export default function StudioSeriesPage() {
     setError(null);
 
     try {
-      const res = await fetch("/api/creator/series?lang=ko", {
+      const res = await fetch(`/api/creator/series?lang=${locale}`, {
         credentials: "include",
         cache: "no-store",
       });
@@ -54,14 +56,14 @@ export default function StudioSeriesPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       try {
-        const res = await fetch("/api/creator/series?lang=ko", {
+        const res = await fetch(`/api/creator/series?lang=${locale}`, {
           credentials: "include",
           cache: "no-store",
         });
@@ -85,7 +87,7 @@ export default function StudioSeriesPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [locale]);
 
   /* ── Create ── */
   async function handleCreate() {
@@ -140,7 +142,7 @@ export default function StudioSeriesPage() {
     const payload: UpdateSeriesPayload = {
       title: editTitle.trim(),
       description: editDescription.trim() || undefined,
-      lang: "ko",
+      lang: locale,
     };
 
     try {

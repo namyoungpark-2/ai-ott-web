@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import StudioSidebar from "@/components/studio/StudioSidebar";
 import type { Channel } from "@/types/channel";
+import { useLocale } from "@/components/LocaleProvider";
 
 export default function StudioDashboardPage() {
+  const { locale } = useLocale();
   const [channel, setChannel] = useState<Channel | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -15,7 +17,7 @@ export default function StudioDashboardPage() {
 
     async function fetchChannel() {
       try {
-        const res = await fetch("/api/creator/channel?lang=ko", {
+        const res = await fetch(`/api/creator/channel?lang=${locale}`, {
           credentials: "include",
           cache: "no-store",
         });

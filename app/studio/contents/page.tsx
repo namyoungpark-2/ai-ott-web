@@ -8,6 +8,7 @@ import type {
   ContentStatus,
   VideoAssetStatus,
 } from "@/types/channel";
+import { useLocale } from "@/components/LocaleProvider";
 
 const STATUS_FILTERS: { label: string; value: ContentStatus | "ALL" }[] = [
   { label: "전체", value: "ALL" },
@@ -76,6 +77,7 @@ function videoStatusLabel(status: VideoAssetStatus): React.ReactNode {
 }
 
 export default function StudioContentsPage() {
+  const { locale } = useLocale();
   const [contents, setContents] = useState<CreatorContent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +87,7 @@ export default function StudioContentsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/creator/contents?lang=ko&limit=50", {
+      const res = await fetch(`/api/creator/contents?lang=${locale}&limit=50`, {
         credentials: "include",
         cache: "no-store",
       });
@@ -99,7 +101,7 @@ export default function StudioContentsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     let cancelled = false;
@@ -108,7 +110,7 @@ export default function StudioContentsPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch("/api/creator/contents?lang=ko&limit=50", {
+        const res = await fetch(`/api/creator/contents?lang=${locale}&limit=50`, {
           credentials: "include",
           cache: "no-store",
         });
@@ -134,7 +136,7 @@ export default function StudioContentsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [locale]);
 
   const handleStatusToggle = async (
     contentId: string,

@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import type { Channel, ChannelContent, ChannelSeries } from "@/types/channel";
 import SubscribeButton from "@/components/SubscribeButton";
 import { useAuth } from "@/components/AuthProvider";
+import { useLocale } from "@/components/LocaleProvider";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -232,6 +233,7 @@ export default function ChannelPage() {
   const params = useParams();
   const handle = typeof params.handle === "string" ? params.handle : "";
   const { user } = useAuth();
+  const { locale } = useLocale();
 
   const [channel, setChannel] = useState<Channel | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -256,7 +258,7 @@ export default function ChannelPage() {
     let cancelled = false;
     setChannelState("loading");
 
-    fetch(`/api/channels/${encodeURIComponent(handle)}?lang=ko`, {
+    fetch(`/api/channels/${encodeURIComponent(handle)}?lang=${locale}`, {
       cache: "no-store",
     })
       .then(async (res) => {
@@ -273,7 +275,7 @@ export default function ChannelPage() {
     return () => {
       cancelled = true;
     };
-  }, [handle, retryKey]);
+  }, [handle, retryKey, locale]);
 
   // ── Fetch subscription status ─────────────────────────────────────────
 
@@ -306,7 +308,7 @@ export default function ChannelPage() {
     setHasMoreContents(true);
 
     fetch(
-      `/api/channels/${encodeURIComponent(handle)}/contents?lang=ko&limit=${CONTENT_LIMIT}&offset=0`,
+      `/api/channels/${encodeURIComponent(handle)}/contents?lang=${locale}&limit=${CONTENT_LIMIT}&offset=0`,
       { cache: "no-store" },
     )
       .then(async (res) => {
@@ -332,7 +334,7 @@ export default function ChannelPage() {
     return () => {
       cancelled = true;
     };
-  }, [handle, retryKey]);
+  }, [handle, retryKey, locale]);
 
   // ── Fetch series ───────────────────────────────────────────────────────
 
@@ -341,7 +343,7 @@ export default function ChannelPage() {
     let cancelled = false;
     setSeriesState("loading");
 
-    fetch(`/api/channels/${encodeURIComponent(handle)}/series?lang=ko`, {
+    fetch(`/api/channels/${encodeURIComponent(handle)}/series?lang=${locale}`, {
       cache: "no-store",
     })
       .then(async (res) => {
@@ -365,7 +367,7 @@ export default function ChannelPage() {
     return () => {
       cancelled = true;
     };
-  }, [handle, retryKey]);
+  }, [handle, retryKey, locale]);
 
   // ── Load more contents ─────────────────────────────────────────────────
 
@@ -374,7 +376,7 @@ export default function ChannelPage() {
     setLoadingMore(true);
     try {
       const res = await fetch(
-        `/api/channels/${encodeURIComponent(handle)}/contents?lang=ko&limit=${CONTENT_LIMIT}&offset=${contentsOffset}`,
+        `/api/channels/${encodeURIComponent(handle)}/contents?lang=${locale}&limit=${CONTENT_LIMIT}&offset=${contentsOffset}`,
         { cache: "no-store" },
       );
       if (!res.ok) throw new Error(`status ${res.status}`);
@@ -394,7 +396,7 @@ export default function ChannelPage() {
     } finally {
       setLoadingMore(false);
     }
-  }, [handle, contentsOffset, loadingMore, hasMoreContents]);
+  }, [handle, contentsOffset, loadingMore, hasMoreContents, locale]);
 
   // ── Retry ──────────────────────────────────────────────────────────────
 

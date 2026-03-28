@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
 import type { Channel } from "@/types/channel";
+import { useLocale } from "@/components/LocaleProvider";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -292,6 +293,7 @@ function SkeletonCard() {
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function ChannelsPage() {
+  const { locale } = useLocale();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [state, setState] = useState<FetchState>("loading");
   const [offset, setOffset] = useState(0);
@@ -308,7 +310,7 @@ export default function ChannelsPage() {
     setOffset(0);
     setHasMore(true);
 
-    fetch(`/api/channels?lang=ko&limit=${PAGE_LIMIT}&offset=0`, {
+    fetch(`/api/channels?lang=${locale}&limit=${PAGE_LIMIT}&offset=0`, {
       cache: "no-store",
     })
       .then(async (res) => {
@@ -334,7 +336,7 @@ export default function ChannelsPage() {
     return () => {
       cancelled = true;
     };
-  }, [retryKey]);
+  }, [retryKey, locale]);
 
   // ── Load more ───────────────────────────────────────────────────────────
 
@@ -343,7 +345,7 @@ export default function ChannelsPage() {
     setLoadingMore(true);
     try {
       const res = await fetch(
-        `/api/channels?lang=ko&limit=${PAGE_LIMIT}&offset=${offset}`,
+        `/api/channels?lang=${locale}&limit=${PAGE_LIMIT}&offset=${offset}`,
         { cache: "no-store" },
       );
       if (!res.ok) throw new Error(`status ${res.status}`);
@@ -363,7 +365,7 @@ export default function ChannelsPage() {
     } finally {
       setLoadingMore(false);
     }
-  }, [offset, loadingMore, hasMore]);
+  }, [offset, loadingMore, hasMore, locale]);
 
   // ── Retry ───────────────────────────────────────────────────────────────
 

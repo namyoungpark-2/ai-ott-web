@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { getThumbnailUrl } from "@/app/lib/url";
 import { BASE_URL } from "@/app/constants";
+import { useLocale } from "@/components/LocaleProvider";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -158,6 +159,7 @@ function SkeletonCard() {
 function SearchPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { locale } = useLocale();
   const initialQ = searchParams.get("q") ?? "";
 
   const [query, setQuery] = useState(initialQ);
@@ -203,7 +205,7 @@ function SearchPageContent() {
     }, 0);
 
     fetch(
-      `/api/catalog/search?lang=en&q=${encodeURIComponent(debouncedQuery)}&limit=48`,
+      `/api/catalog/search?lang=${locale}&q=${encodeURIComponent(debouncedQuery)}&limit=48`,
       { cache: "no-store" }
     )
       .then(async (res) => {
@@ -221,7 +223,7 @@ function SearchPageContent() {
       cancelled = true;
       clearTimeout(loadingTimer);
     };
-  }, [debouncedQuery]);
+  }, [debouncedQuery, locale]);
 
   // ESC: clear input
   useEffect(() => {

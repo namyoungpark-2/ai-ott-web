@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getThumbnailUrl } from "@/app/lib/url";
 import { BASE_URL } from "@/app/constants";
+import { useLocale } from "@/components/LocaleProvider";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -132,6 +133,7 @@ function SkeletonCard() {
 export default function CategoryPage() {
   const params = useParams();
   const slug = typeof params.slug === "string" ? params.slug : "";
+  const { locale } = useLocale();
   const meta = CATEGORY_META[slug];
 
   // 잘못된 slug → Next.js 404
@@ -159,7 +161,7 @@ export default function CategoryPage() {
     if (!slug) return;
     let cancelled = false;
     fetch(
-      `/api/categories/${encodeURIComponent(slug)}?lang=en&page=0&size=${PAGE_SIZE}`,
+      `/api/categories/${encodeURIComponent(slug)}?lang=${locale}&page=0&size=${PAGE_SIZE}`,
       { cache: "no-store" }
     )
       .then(async (res) => {
@@ -186,7 +188,7 @@ export default function CategoryPage() {
     return () => {
       cancelled = true;
     };
-  }, [slug, retryKey]);
+  }, [slug, retryKey, locale]);
 
   // 더 보기 fetch
   async function loadMore() {
@@ -194,7 +196,7 @@ export default function CategoryPage() {
     setLoadingMore(true);
     try {
       const res = await fetch(
-        `/api/categories/${encodeURIComponent(slug)}?lang=en&page=${nextPage}&size=${PAGE_SIZE}`,
+        `/api/categories/${encodeURIComponent(slug)}?lang=${locale}&page=${nextPage}&size=${PAGE_SIZE}`,
         { cache: "no-store" }
       );
       if (!res.ok) throw new Error(`status ${res.status}`);

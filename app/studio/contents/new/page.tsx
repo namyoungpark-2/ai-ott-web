@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import StudioSidebar from "@/components/studio/StudioSidebar";
 import type { CreatorSeries, CreateContentPayload } from "@/types/channel";
+import { useLocale } from "@/components/LocaleProvider";
 
 type Mode = "MOVIE" | "EPISODE";
 
 export default function StudioNewContentPage() {
   const router = useRouter();
+  const { locale } = useLocale();
 
   const [mode, setMode] = useState<Mode>("MOVIE");
   const [title, setTitle] = useState("");
@@ -37,7 +39,7 @@ export default function StudioNewContentPage() {
 
     async function fetchSeries() {
       try {
-        const res = await fetch("/api/creator/series?lang=ko", {
+        const res = await fetch(`/api/creator/series?lang=${locale}`, {
           credentials: "include",
           cache: "no-store",
         });
@@ -55,7 +57,7 @@ export default function StudioNewContentPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [locale]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

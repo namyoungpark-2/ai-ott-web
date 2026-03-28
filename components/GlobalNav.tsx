@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "./AuthProvider";
 import { useTheme } from "./ThemeProvider";
+import { useLocale, SUPPORTED_LOCALES } from "./LocaleProvider";
 import { useCatalogNav } from "./CatalogProvider";
 import LoginModal from "./LoginModal";
 
@@ -55,13 +56,13 @@ export default function GlobalNav() {
   const pathname = usePathname();
   const { user, loading, logout } = useAuth();
   const { theme, toggle: toggleTheme } = useTheme();
+  const { locale, setLocale, t } = useLocale();
   const { categories, genres } = useCatalogNav();
   const [showLogin, setShowLogin] = useState(false);
 
-  // "홈"을 항상 첫 번째로 + 서버에서 받은 카테고리 + 장르
   const navItems = [
-    { label: "홈", href: "/" },
-    { label: "채널", href: "/channels" },
+    { label: t("nav.home"), href: "/" },
+    { label: t("nav.channels"), href: "/channels" },
     ...categories.map((c) => ({ label: c.label, href: `/categories/${c.slug}` })),
     ...genres.map((g) => ({ label: g.label, href: `/categories/genre/${g.slug}` })),
   ];
@@ -117,7 +118,7 @@ export default function GlobalNav() {
             {/* Search */}
             <Link
               href="/search"
-              aria-label="검색"
+              aria-label={t("nav.search")}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -144,6 +145,38 @@ export default function GlobalNav() {
             >
               <SearchIcon />
             </Link>
+
+            {/* Locale selector */}
+            <select
+              value={locale}
+              onChange={(e) => setLocale(e.target.value as "ko" | "en")}
+              aria-label="Language"
+              style={{
+                background: "transparent",
+                border: "1px solid transparent",
+                borderRadius: 10,
+                padding: "6px 8px",
+                fontSize: 13,
+                color: "var(--muted)",
+                cursor: "pointer",
+                transition: "all .15s",
+                outline: "none",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "var(--line2)";
+                e.currentTarget.style.color = "var(--text)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "transparent";
+                e.currentTarget.style.color = "var(--muted)";
+              }}
+            >
+              {SUPPORTED_LOCALES.map((l) => (
+                <option key={l.code} value={l.code}>
+                  {l.label}
+                </option>
+              ))}
+            </select>
 
             {/* Theme toggle */}
             <button
@@ -228,7 +261,7 @@ export default function GlobalNav() {
                         transition: "all .15s",
                       }}
                     >
-                      로그아웃
+                      {t("nav.logout")}
                     </button>
                   </div>
                 ) : (
@@ -237,7 +270,7 @@ export default function GlobalNav() {
                     className="btn-grad"
                     style={{ fontSize: 14, padding: "9px 22px" }}
                   >
-                    시작하기
+                    {t("nav.start")}
                   </button>
                 )}
               </>

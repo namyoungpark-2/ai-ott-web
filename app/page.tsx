@@ -8,6 +8,7 @@ import { BASE_URL } from "./constants";
 import { AdProvider, useAds } from "@/components/ads/AdProvider";
 import AdBanner from "@/components/ads/AdBanner";
 import { useAuth } from "@/components/AuthProvider";
+import { useLocale } from "@/components/LocaleProvider";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -274,6 +275,7 @@ function HomePage() {
   const [continueItems, setContinueItems] = useState<ContinueItem[]>([]);
 
   const { user } = useAuth();
+  const { locale } = useLocale();
   const router = useRouter();
 
   const [query, setQuery] = useState("");
@@ -309,7 +311,7 @@ function HomePage() {
   // Browse fetch
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/catalog/browse?lang=en&sectionLimit=12", { cache: "no-store" })
+    fetch(`/api/catalog/browse?lang=${locale}&sectionLimit=12`, { cache: "no-store" })
       .then(async (res) => {
         if (cancelled) return;
         if (!res.ok) throw new Error(`status ${res.status}`);
@@ -323,7 +325,7 @@ function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, [retryKey]);
+  }, [retryKey, locale]);
 
   // Search with debounce (no synchronous setState in effect body)
   useEffect(() => {
@@ -334,7 +336,7 @@ function HomePage() {
       setSearchLoading(true);
       setSearchDone(false);
       fetch(
-        `/api/catalog/search?lang=en&q=${encodeURIComponent(trimmed)}&limit=24`,
+        `/api/catalog/search?lang=${locale}&q=${encodeURIComponent(trimmed)}&limit=24`,
         { cache: "no-store" }
       )
         .then(async (res) => {
@@ -349,7 +351,7 @@ function HomePage() {
         });
     }, 300);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, locale]);
 
   const hero = useMemo(() => {
     if (isSearching) return searchResults[0] ?? null;

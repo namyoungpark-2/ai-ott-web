@@ -2,6 +2,7 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import { AuthProvider } from "../components/AuthProvider";
 import { ThemeProvider } from "../components/ThemeProvider";
+import { LocaleProvider } from "../components/LocaleProvider";
 import { CatalogNavProvider } from "../components/CatalogProvider";
 import GlobalNav from "../components/GlobalNav";
 import CookieConsent from "../components/CookieConsent";
@@ -17,13 +18,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ko" className={inter.variable} suppressHydrationWarning>
       <body>
         <ThemeProvider>
-          <AuthProvider>
-            <CatalogNavProvider>
-              <GlobalNav />
-              {children}
-              <CookieConsent />
-            </CatalogNavProvider>
-          </AuthProvider>
+          <LocaleProvider>
+            <AuthProvider>
+              <CatalogNavProvider>
+                <GlobalNav />
+                {children}
+                <CookieConsent />
+              </CatalogNavProvider>
+            </AuthProvider>
+          </LocaleProvider>
         </ThemeProvider>
       </body>
     </html>

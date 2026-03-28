@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { useLocale } from "./LocaleProvider";
 
 export type NavCategory = {
   slug: string;
@@ -31,6 +32,7 @@ export function useCatalogNav() {
 }
 
 export function CatalogNavProvider({ children }: { children: React.ReactNode }) {
+  const { locale } = useLocale();
   const [categories, setCategories] = useState<NavCategory[]>([]);
   const [genres, setGenres] = useState<NavGenre[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +40,7 @@ export function CatalogNavProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     let cancelled = false;
 
-    fetch("/api/catalog/browse?lang=en&sectionLimit=1", { cache: "no-store" })
+    fetch(`/api/catalog/browse?lang=${locale}&sectionLimit=1`, { cache: "no-store" })
       .then(async (res) => {
         if (cancelled || !res.ok) return;
         const data = await res.json();
@@ -57,7 +59,7 @@ export function CatalogNavProvider({ children }: { children: React.ReactNode }) 
       });
 
     return () => { cancelled = true; };
-  }, []);
+  }, [locale]);
 
   return (
     <CatalogNavContext.Provider value={{ categories, genres, loading }}>

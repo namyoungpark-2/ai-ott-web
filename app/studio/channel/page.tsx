@@ -3,8 +3,10 @@
 import { useEffect, useState, type FormEvent } from "react";
 import StudioSidebar from "@/components/studio/StudioSidebar";
 import type { Channel, UpdateChannelPayload } from "@/types/channel";
+import { useLocale } from "@/components/LocaleProvider";
 
 export default function ChannelSettingsPage() {
+  const { locale } = useLocale();
   const [channel, setChannel] = useState<Channel | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -33,7 +35,7 @@ export default function ChannelSettingsPage() {
 
     async function fetchChannel() {
       try {
-        const res = await fetch("/api/creator/channel?lang=ko", {
+        const res = await fetch(`/api/creator/channel?lang=${locale}`, {
           credentials: "include",
           cache: "no-store",
         });
@@ -64,7 +66,7 @@ export default function ChannelSettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [locale]);
 
   const handleSaveHandle = async () => {
     const trimmed = newHandle.trim();
