@@ -237,6 +237,7 @@ export default function ChannelPage() {
 
   const [channel, setChannel] = useState<Channel | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isOwnChannel, setIsOwnChannel] = useState(false);
   const [channelState, setChannelState] = useState<FetchState>("loading");
 
   const [contents, setContents] = useState<ChannelContent[]>([]);
@@ -296,6 +297,27 @@ export default function ChannelPage() {
       cancelled = true;
     };
   }, [handle, user]);
+
+  // ── Check if own channel ────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!handle || !user) {
+      setIsOwnChannel(false);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/creator/channel?lang=${locale}`, {
+      credentials: "include",
+      cache: "no-store",
+    })
+      .then(async (res) => {
+        if (cancelled || !res.ok) return;
+        const data = await res.json();
+        setIsOwnChannel(data.handle === handle);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [handle, user, locale]);
 
   // ── Fetch contents (initial) ───────────────────────────────────────────
 
@@ -575,22 +597,39 @@ export default function ChannelPage() {
             )}
           </div>
 
-          {/* Subscribe button */}
+          {/* Subscribe button or Studio link */}
           <div style={{ flexShrink: 0 }}>
-            <SubscribeButton
-              channelHandle={ch.handle}
-              initialSubscribed={isSubscribed}
-              onSubscriptionChange={(subscribed) => {
-                setChannel((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        subscriberCount: prev.subscriberCount + (subscribed ? 1 : -1),
-                      }
-                    : prev,
-                );
-              }}
-            />
+            {isOwnChannel ? (
+              <Link
+                href="/studio"
+                className="btn-grad"
+                style={{
+                  padding: "8px 24px",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  borderRadius: "var(--r-sm)",
+                  textDecoration: "none",
+                  color: "#fff",
+                }}
+              >
+                스튜디오에서 관리
+              </Link>
+            ) : (
+              <SubscribeButton
+                channelHandle={ch.handle}
+                initialSubscribed={isSubscribed}
+                onSubscriptionChange={(subscribed) => {
+                  setChannel((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          subscriberCount: prev.subscriberCount + (subscribed ? 1 : -1),
+                        }
+                      : prev,
+                  );
+                }}
+              />
+            )}
           </div>
         </div>
       </div>
