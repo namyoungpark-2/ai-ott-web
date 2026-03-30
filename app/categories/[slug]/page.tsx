@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getThumbnailUrl } from "@/app/lib/url";
 import { BASE_URL } from "@/app/constants";
 import { useLocale } from "@/components/LocaleProvider";
+import { useCatalogNav } from "@/components/CatalogProvider";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -130,14 +130,122 @@ function SkeletonCard() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+function EmptyCategory({ label }: { label: string }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "80px 20px",
+        textAlign: "center",
+      }}
+    >
+      {/* Icon */}
+      <svg
+        width="64"
+        height="64"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="var(--muted)"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{ marginBottom: 24, opacity: 0.5 }}
+      >
+        <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
+        <line x1="7" y1="2" x2="7" y2="22" />
+        <line x1="17" y1="2" x2="17" y2="22" />
+        <line x1="2" y1="12" x2="22" y2="12" />
+        <line x1="2" y1="7" x2="7" y2="7" />
+        <line x1="2" y1="17" x2="7" y2="17" />
+        <line x1="17" y1="7" x2="22" y2="7" />
+        <line x1="17" y1="17" x2="22" y2="17" />
+      </svg>
+
+      <h2
+        style={{
+          fontSize: 22,
+          fontWeight: 700,
+          margin: "0 0 10px",
+        }}
+      >
+        {label} 콘텐츠 준비 중
+      </h2>
+
+      <p
+        style={{
+          margin: "0 0 8px",
+          fontSize: 15,
+          color: "var(--muted)",
+          lineHeight: 1.6,
+          maxWidth: 400,
+        }}
+      >
+        이 카테고리에는 아직 등록된 콘텐츠가 없습니다.
+      </p>
+      <p
+        style={{
+          margin: "0 0 32px",
+          fontSize: 13,
+          color: "var(--muted2, var(--muted))",
+          lineHeight: 1.5,
+        }}
+      >
+        곧 새로운 콘텐츠가 추가될 예정이에요.
+      </p>
+
+      <div style={{ display: "flex", gap: 12 }}>
+        <Link href="/">
+          <button
+            className="btn-grad"
+            style={{ padding: "10px 28px", fontSize: 14 }}
+          >
+            홈으로 돌아가기
+          </button>
+        </Link>
+        <Link href="/channels">
+          <button
+            style={{
+              padding: "10px 28px",
+              fontSize: 14,
+              background: "transparent",
+              border: "1px solid var(--line)",
+              borderRadius: "var(--r)",
+              color: "inherit",
+              cursor: "pointer",
+              transition: "border-color .2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "var(--accent)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "var(--line)";
+            }}
+          >
+            채널 탐색하기
+          </button>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export default function CategoryPage() {
   const params = useParams();
   const slug = typeof params.slug === "string" ? params.slug : "";
   const { locale } = useLocale();
-  const meta = CATEGORY_META[slug];
+  const { categories: navCategories } = useCatalogNav();
 
-  // 잘못된 slug → Next.js 404
-  if (!meta) notFound();
+  // CATEGORY_META에 있으면 그대로 사용, 아니면 동적 카테고리에서 찾기
+  const meta = CATEGORY_META[slug] ?? (() => {
+    const nav = navCategories.find((c) => c.slug === slug);
+    return nav ? { label: nav.label, description: `${nav.label} 카테고리의 콘텐츠를 만나보세요.` } : null;
+  })();
+
+  // slug를 사람이 읽을 수 있는 라벨로 변환 (meta가 없을 때도 안내 페이지 표시)
+  const displayLabel = meta?.label ?? slug;
 
   const [items, setItems] = useState<ContentItem[]>([]);
   const [state, setState] = useState<FetchState>("loading");
@@ -166,6 +274,13 @@ export default function CategoryPage() {
     )
       .then(async (res) => {
         if (cancelled) return;
+        // 404/405 → 콘텐츠 없음으로 처리 (에러 페이지 대신 빈 안내)
+        if (res.status === 404 || res.status === 405) {
+          setItems([]);
+          setHasMore(false);
+          setState("done");
+          return;
+        }
         if (!res.ok) throw new Error(`status ${res.status}`);
         const data = (await res.json()) as {
           contents?: ContentItem[];
@@ -238,10 +353,12 @@ export default function CategoryPage() {
           }}
         >
           <div>
-            <h1 style={{ fontSize: 32, margin: "0 0 6px" }}>{meta.label}</h1>
-            <p style={{ color: "var(--muted)", margin: 0, fontSize: 14 }}>
-              {meta.description}
-            </p>
+            <h1 style={{ fontSize: 32, margin: "0 0 6px" }}>{displayLabel}</h1>
+            {meta?.description && (
+              <p style={{ color: "var(--muted)", margin: 0, fontSize: 14 }}>
+                {meta.description}
+              </p>
+            )}
           </div>
 
           {/* 정렬 선택 — TODO(API): 서버 정렬 파라미터 연동 후 클라이언트 정렬 제거 */}
@@ -307,16 +424,7 @@ export default function CategoryPage() {
 
         {/* 빈 상태 */}
         {state === "done" && items.length === 0 && (
-          <div
-            style={{ padding: "60px 0", textAlign: "center", color: "var(--muted)" }}
-          >
-            <p style={{ fontSize: 16, marginBottom: 16 }}>
-              아직 등록된 콘텐츠가 없습니다.
-            </p>
-            <Link href="/">
-              <button>홈으로 돌아가기</button>
-            </Link>
-          </div>
+          <EmptyCategory label={displayLabel} />
         )}
 
         {/* 콘텐츠 그리드 */}
