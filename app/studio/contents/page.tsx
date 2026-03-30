@@ -9,6 +9,7 @@ import { StatusBadge, VideoStatusBadge } from "@/components/studio/StatusBadge";
 import ConfirmDialog from "@/components/studio/ConfirmDialog";
 import { useLocale } from "@/components/LocaleProvider";
 import type { CreatorContent, ContentStatus } from "@/types/channel";
+import { ModalPlayer } from "@/components/studio/VideoPreview";
 
 const STATUS_FILTERS: { label: string; value: ContentStatus | "ALL" }[] = [
   { label: "전체", value: "ALL" },
@@ -42,6 +43,9 @@ function ContentsListContent() {
 
   // Bulk delete confirm dialog state
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+  // Video preview modal
+  const [previewContentId, setPreviewContentId] = useState<string | null>(null);
 
   const fetchContents = useCallback(async () => {
     setLoading(true);
@@ -217,29 +221,55 @@ function ContentsListContent() {
       key: "thumbnail",
       label: "썸네일",
       width: "56px",
-      render: (c) =>
-        c.thumbnailUrl ? (
-          <img
-            src={c.thumbnailUrl}
-            alt=""
-            style={{
-              width: 40,
-              height: 24,
-              objectFit: "cover",
-              borderRadius: 4,
-            }}
-          />
-        ) : (
+      render: (c) => (
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            setPreviewContentId(c.contentId);
+          }}
+          style={{ position: "relative", cursor: "pointer", width: 40, height: 24 }}
+          title="영상 미리보기"
+        >
+          {c.thumbnailUrl ? (
+            <img
+              src={c.thumbnailUrl}
+              alt=""
+              style={{
+                width: 40,
+                height: 24,
+                objectFit: "cover",
+                borderRadius: 4,
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 40,
+                height: 24,
+                borderRadius: 4,
+                background:
+                  "linear-gradient(135deg, rgba(139,92,246,.3), rgba(59,130,246,.3))",
+              }}
+            />
+          )}
           <div
             style={{
-              width: 40,
-              height: 24,
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(0,0,0,.35)",
               borderRadius: 4,
-              background:
-                "linear-gradient(135deg, rgba(139,92,246,.3), rgba(59,130,246,.3))",
+              opacity: 0.8,
             }}
-          />
-        ),
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#fff">
+              <polygon points="8 5 20 12 8 19" />
+            </svg>
+          </div>
+        </div>
+      ),
     },
     {
       key: "title",
@@ -507,6 +537,14 @@ function ContentsListContent() {
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteTarget(null)}
       />
+
+      {/* Video preview modal */}
+      {previewContentId && (
+        <ModalPlayer
+          contentId={previewContentId}
+          onClose={() => setPreviewContentId(null)}
+        />
+      )}
 
       {/* Bulk delete confirm dialog */}
       <ConfirmDialog

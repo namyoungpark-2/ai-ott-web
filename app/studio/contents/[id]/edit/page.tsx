@@ -8,6 +8,7 @@ import { StatusBadge, VideoStatusBadge } from "@/components/studio/StatusBadge";
 import ConfirmDialog from "@/components/studio/ConfirmDialog";
 import { useLocale } from "@/components/LocaleProvider";
 import type { CreatorContent, ContentStatus } from "@/types/channel";
+import { InlinePlayer } from "@/components/studio/VideoPreview";
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
@@ -276,7 +277,23 @@ function ContentEditContent() {
         </p>
       </div>
 
-      {/* B) Status change */}
+      {/* B) Video preview */}
+      <div style={sectionStyle}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <h2 style={headingStyle}>영상 미리보기</h2>
+          <a
+            href={`/watch/${id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "var(--accent)", fontSize: 13, textDecoration: "none" }}
+          >
+            전체 화면으로 보기 →
+          </a>
+        </div>
+        <InlinePlayer contentId={id} />
+      </div>
+
+      {/* C) Status change */}
       {statusTransitions.length > 0 && (
         <div style={sectionStyle}>
           <h2 style={{ ...headingStyle, marginBottom: 14 }}>공개 상태 변경</h2>
