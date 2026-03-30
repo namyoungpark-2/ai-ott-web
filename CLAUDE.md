@@ -62,6 +62,10 @@ Do not solve these only in the frontend; explicitly note that backend changes ar
 - Personalization / authorization / playback policies change
 - Admin curation / operational features are added
 
+## Git Workflow
+- 작업이 완료되면 항상 `git commit` + `git push`까지 수행한다.
+- 커밋 메시지는 conventional commits 형식을 따른다 (feat, fix, refactor 등).
+
 ## Completion Report Format
 After each task, report in the following format:
 - Changed files
