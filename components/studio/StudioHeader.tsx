@@ -61,7 +61,7 @@ export default function StudioHeader({ channel }: Props) {
       {/* Right: view channel link */}
       {channel && (
         <Link
-          href={`/channels/${channel.handle}`}
+          href={`/studios/${channel.handle}`}
           style={{
             color: "var(--accent)",
             fontSize: 13,

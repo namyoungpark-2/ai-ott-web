@@ -39,7 +39,7 @@ function ProfileFallback({ name }: { name: string }) {
 function OfficialBadge() {
   return (
     <span
-      title="공식 채널"
+      title="공식 스튜디오"
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -95,7 +95,7 @@ function formatSubscribers(count: number): string {
 function ChannelCard({ channel }: { channel: Channel }) {
   return (
     <Link
-      href={`/channels/${channel.handle}`}
+      href={`/studios/${channel.handle}`}
       style={{ textDecoration: "none", color: "inherit" }}
     >
       <div
@@ -294,7 +294,7 @@ function SkeletonCard() {
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
-export default function ChannelsPage() {
+export default function StudiosPage() {
   const { locale } = useLocale();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [state, setState] = useState<FetchState>("loading");
@@ -420,7 +420,7 @@ export default function ChannelsPage() {
               margin: "0 0 8px",
             }}
           >
-            채널 탐색
+            스튜디오 탐색
           </h1>
           <p
             style={{
@@ -430,7 +430,7 @@ export default function ChannelsPage() {
               lineHeight: 1.5,
             }}
           >
-            다양한 크리에이터의 채널을 찾아보세요
+            다양한 크리에이터의 스튜디오를 찾아보세요
           </p>
         </div>
 
@@ -461,8 +461,8 @@ export default function ChannelsPage() {
             type="text"
             value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder="채널 이름 또는 핸들로 검색"
-            aria-label="채널 검색"
+            placeholder="스튜디오 이름 또는 핸들로 검색"
+            aria-label="스튜디오 검색"
             style={{
               width: "100%",
               padding: "12px 40px 12px 42px",
@@ -544,7 +544,7 @@ export default function ChannelsPage() {
             }}
           >
             <p style={{ fontSize: 18, marginBottom: 12 }}>
-              채널 목록을 불러올 수 없습니다.
+              스튜디오 목록을 불러올 수 없습니다.
             </p>
             <p style={{ fontSize: 13, marginBottom: 24 }}>
               서버 연결을 확인하거나 잠시 후 다시 시도해 주세요.
@@ -578,12 +578,12 @@ export default function ChannelsPage() {
                 </p>
               </>
             ) : (
-              <p style={{ fontSize: 18 }}>등록된 채널이 없습니다.</p>
+              <p style={{ fontSize: 18 }}>등록된 스튜디오가 없습니다.</p>
             )}
           </div>
         )}
 
-        {/* Channel grid */}
+        {/* Studio grid */}
         {state === "done" && channels.length > 0 && (
           <>
             <div

@@ -175,7 +175,7 @@ function ProfileFallback({ name }: { name: string }) {
 function OfficialBadge() {
   return (
     <span
-      title="공식 채널"
+      title="공식 스튜디오"
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -229,7 +229,7 @@ function formatSubscribers(count: number): string {
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
-export default function ChannelPage() {
+export default function StudioHandlePage() {
   const params = useParams();
   const handle = typeof params.handle === "string" ? params.handle : "";
   const { user } = useAuth();
@@ -441,7 +441,7 @@ export default function ChannelPage() {
           }}
         >
           <p style={{ fontSize: 18, marginBottom: 12 }}>
-            채널을 불러올 수 없습니다.
+            스튜디오를 불러올 수 없습니다.
           </p>
           <p style={{ fontSize: 13, marginBottom: 24 }}>
             서버 연결을 확인하거나 잠시 후 다시 시도해 주세요.
@@ -508,7 +508,7 @@ export default function ChannelPage() {
         )}
       </div>
 
-      {/* ── Channel Header ─────────────────────────────────────────────── */}
+      {/* ── Studio Header ───────────────────────────────────────────────── */}
       <div
         style={{
           maxWidth: 1280,
@@ -549,7 +549,7 @@ export default function ChannelPage() {
           }}
         >
           <div style={{ flex: 1, minWidth: 200 }}>
-            {/* Channel name + official badge */}
+            {/* Studio name + official badge */}
             <h1
               style={{
                 fontSize: 24,

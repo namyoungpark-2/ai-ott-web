@@ -56,7 +56,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "profile", label: "프로필" },
   { key: "password", label: "비밀번호" },
   { key: "subscription", label: "구독 정보" },
-  { key: "channels", label: "내 구독 채널" },
+  { key: "channels", label: "내 구독 스튜디오" },
   { key: "history", label: "시청 기록" },
   { key: "account", label: "계정 관리" },
 ];
@@ -559,7 +559,7 @@ function ChannelsTab() {
       cache: "no-store",
     })
       .then((r) => {
-        if (!r.ok) throw new Error("구독 채널을 불러올 수 없습니다.");
+        if (!r.ok) throw new Error("구독 스튜디오를 불러올 수 없습니다.");
         return r.json();
       })
       .then((data: SubscribedChannel[]) => setChannels(data))
@@ -585,11 +585,11 @@ function ChannelsTab() {
 
   return (
     <div style={panelStyle}>
-      <h2 style={sectionTitleStyle}>내 구독 채널</h2>
+      <h2 style={sectionTitleStyle}>내 구독 스튜디오</h2>
 
       {channels.length === 0 ? (
         <p style={{ color: "var(--muted)", fontSize: 14 }}>
-          구독 중인 채널이 없습니다.
+          구독 중인 스튜디오가 없습니다.
         </p>
       ) : (
         <div
@@ -602,7 +602,7 @@ function ChannelsTab() {
           {channels.map((ch) => (
             <Link
               key={ch.id}
-              href={`/channels/${ch.handle}`}
+              href={`/studios/${ch.handle}`}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -670,7 +670,7 @@ function ChannelsTab() {
                   </span>
                   {ch.isOfficial && (
                     <span
-                      title="공식 채널"
+                      title="공식 스튜디오"
                       style={{
                         display: "inline-flex",
                         alignItems: "center",

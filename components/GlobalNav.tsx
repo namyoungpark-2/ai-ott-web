@@ -62,7 +62,7 @@ export default function GlobalNav() {
 
   const navItems = [
     { label: t("nav.home"), href: "/" },
-    { label: t("nav.channels"), href: "/channels" },
+    { label: t("nav.channels"), href: "/studios" },
     ...categories.map((c) => ({ label: c.label, href: `/categories/${c.slug}` })),
   ];
 

@@ -205,7 +205,7 @@ function EmptyCategory({ label }: { label: string }) {
             홈으로 돌아가기
           </button>
         </Link>
-        <Link href="/channels">
+        <Link href="/studios">
           <button
             style={{
               padding: "10px 28px",
@@ -224,7 +224,7 @@ function EmptyCategory({ label }: { label: string }) {
               e.currentTarget.style.borderColor = "var(--line)";
             }}
           >
-            채널 탐색하기
+            스튜디오 탐색하기
           </button>
         </Link>
       </div>

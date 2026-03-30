@@ -137,7 +137,7 @@ function DashboardContent() {
           </div>
 
           <Link
-            href={`/channels/${channel.handle}`}
+            href={`/studios/${channel.handle}`}
             style={{
               padding: "8px 18px",
               borderRadius: "var(--r-sm)",
@@ -150,7 +150,7 @@ function DashboardContent() {
               transition: "background 0.15s",
             }}
           >
-            채널 보기
+            스튜디오 보기
           </Link>
         </div>
       )}
@@ -199,7 +199,7 @@ function DashboardContent() {
             transition: "border-color 0.15s",
           }}
         >
-          채널 설정
+          스튜디오 설정
         </Link>
       </div>
 

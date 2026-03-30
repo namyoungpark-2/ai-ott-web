@@ -158,7 +158,7 @@ function ContentCard({ item }: { item: CatalogItem }) {
         </div>
         {item.channelName && item.channelHandle && (
           <a
-            href={`/channels/${item.channelHandle}`}
+            href={`/studios/${item.channelHandle}`}
             onClick={(e) => e.stopPropagation()}
             style={{
               display: "block",

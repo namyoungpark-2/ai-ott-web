@@ -353,7 +353,7 @@ export default function ContentDetailPage() {
             {/* 채널 링크 */}
             {content.channelHandle && (
               <Link
-                href={`/channels/${content.channelHandle}`}
+                href={`/studios/${content.channelHandle}`}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",

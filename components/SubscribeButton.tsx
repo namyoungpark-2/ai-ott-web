@@ -28,7 +28,7 @@ export default function SubscribeButton({
 
   const handleClick = async () => {
     if (!user) {
-      router.push(`/login?next=/channels/${channelHandle}`);
+      router.push(`/login?next=/studios/${channelHandle}`);
       return;
     }
 
