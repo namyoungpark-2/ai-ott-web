@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import StudioLayout from "@/components/studio/StudioLayout";
 import { ContentForm, type ContentFormData } from "@/components/studio/ContentForm";
@@ -53,6 +53,8 @@ function ContentEditContent() {
   const [toast, setToast] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [statusChanging, setStatusChanging] = useState(false);
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
 
   // ── Fetch content ────────────────────────────────────────────────────────
 
@@ -166,6 +168,50 @@ function ContentEditContent() {
       router.push("/studio/contents");
     } catch {
       setToast("서버 연결에 실패했습니다.");
+    }
+  };
+
+  // ── Thumbnail upload ─────────────────────────────────────────────────────
+
+  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate: image only, max 10MB
+    if (!file.type.startsWith("image/")) {
+      setToast("이미지 파일만 업로드할 수 있습니다.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setToast("파일 크기는 10MB 이하여야 합니다.");
+      return;
+    }
+
+    setThumbnailUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch(`/api/creator/contents/${id}/thumbnail`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        setToast(body?.message ?? "썸네일 업로드에 실패했습니다.");
+        return;
+      }
+
+      await fetchContent();
+      setToast("썸네일이 업로드되었습니다.");
+    } catch {
+      setToast("서버 연결에 실패했습니다.");
+    } finally {
+      setThumbnailUploading(false);
+      // Reset input so same file can be re-selected
+      if (thumbnailInputRef.current) thumbnailInputRef.current.value = "";
     }
   };
 
@@ -291,6 +337,72 @@ function ContentEditContent() {
           </a>
         </div>
         <InlinePlayer contentId={id} />
+      </div>
+
+      {/* B-2) Thumbnail upload */}
+      <div style={sectionStyle}>
+        <h2 style={{ ...headingStyle, marginBottom: 14 }}>썸네일</h2>
+        <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+          {/* Current thumbnail preview */}
+          <div
+            style={{
+              width: 200,
+              aspectRatio: "16 / 9",
+              borderRadius: 8,
+              overflow: "hidden",
+              background: "rgba(0,0,0,.4)",
+              flexShrink: 0,
+            }}
+          >
+            {content.thumbnailUrl ? (
+              <img
+                src={content.thumbnailUrl}
+                alt="현재 썸네일"
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--muted)",
+                  fontSize: 12,
+                }}
+              >
+                썸네일 없음
+              </div>
+            )}
+          </div>
+
+          {/* Upload area */}
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <p style={{ margin: "0 0 8px", fontSize: 13, color: "var(--muted)" }}>
+              16:9 비율의 이미지를 권장합니다. (최대 10MB)
+            </p>
+            <input
+              ref={thumbnailInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleThumbnailUpload}
+              style={{ display: "none" }}
+            />
+            <button
+              type="button"
+              onClick={() => thumbnailInputRef.current?.click()}
+              disabled={thumbnailUploading}
+              style={{
+                ...statusBtnBase,
+                opacity: thumbnailUploading ? 0.6 : 1,
+                cursor: thumbnailUploading ? "not-allowed" : "pointer",
+              }}
+            >
+              {thumbnailUploading ? "업로드 중..." : content.thumbnailUrl ? "썸네일 변경" : "썸네일 업로드"}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* C) Status change */}
